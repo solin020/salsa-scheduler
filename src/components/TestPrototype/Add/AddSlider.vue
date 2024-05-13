@@ -1,0 +1,32 @@
+<template>
+    <div class="j_question_grid">
+        <div class="j_edit_area">
+            <h2>Editing Question {{ props.my.id }}</h2>
+            <div class="j_divider"/>
+            <v-text-field v-model="props.my.label" label="User visible label"/>
+            <v-text-field v-model="props.my.min" label="Minimum slider value"/>
+            <v-text-field v-model="props.my.max" label="Maximum slider value"/>
+        </div>
+        <div class="j_user_area">
+            <h2>What the user sees</h2>
+            <h2>{{ props.my.label }}</h2>
+            <span>{{ props.my.min }}</span>
+            <v-slider
+            thumb-label="always"
+            :min="props.my.min"
+            :max="props.my.max"
+            />
+            <span>{{ props.my.max }}</span>
+            <v-btn :disabled="true">Continue</v-btn>
+        </div>
+    </div>
+</template>
+<script setup lang="ts">
+import {type Slider} from '@/types'
+import { ref } from 'vue';
+interface Props {
+    my:Slider
+}
+const props = defineProps<Props>()
+
+</script>
