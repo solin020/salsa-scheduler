@@ -10,7 +10,7 @@ import { isWhiteSpaceSingleLine } from 'typescript'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: `http://localhost:8123/salsa/server/`,
+  base: `https://rxinformatics.net/salsa/server/`,
   plugins: [
     vue(),
   ],
@@ -30,7 +30,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         coordinator: resolve(__dirname, 'coordinator.html'),
-        admin: resolve(__dirname, 'admin.html'),
+        admin: resolve(__dirname, 'admin.html')
       },
     },
   },

@@ -29,11 +29,11 @@
         </template>
         <template #postamble>
             <span>
-                <v-text-field label="Question id" v-model="questionid"/>
+                <v-text-field :rules="[id_regex_test]" label="Question id" v-model="questionid"/>
                 <v-select v-model="questiontype" label="Question type" :items="[
                     'textbox', 'slider', 'single-choice-radio', 'single-choice-dropdown', 'multiple-choice-checkbox'
                     ]"/>
-                <v-btn @click="add_question()" :disabled="button_active">Add question ➕</v-btn> 
+                <v-btn @click="add_question()" :disabled="button_inactive">Add question ➕</v-btn> 
             </span>
         </template>
     </j-list>
@@ -45,7 +45,8 @@ import {type Ema,
         type Textbox as TextboxType,
         type SingleChoiceRadio as SingleChoiceRadioType,
         type SingleChoiceDropdown as SingleChoiceDropdownType,
-        type MultipleChoiceCheckbox as MultipleChoiceCheckboxType} from '@/types'
+        type MultipleChoiceCheckbox as MultipleChoiceCheckboxType,
+    } from '@/types'
 import AddSlider from './AddSlider.vue';
 import AddSingleChoiceDropdown from './AddSingleChoiceDropdown.vue';
 import AddSingleChoiceRadio from './AddSingleChoiceRadio.vue';
@@ -53,6 +54,7 @@ import AddMultipleChoiceCheckbox from './AddMultipleChoiceCheckbox.vue';
 import AddTextbox from './AddTextbox.vue';
 import JList from '@/components/JList.vue';
 import {ref, type Ref, computed, type ComputedRef} from 'vue'
+import { id_regex_test } from '@/regexes';
 
 interface Props {
     my:Ema
@@ -112,8 +114,13 @@ function add_question(){
 function delete_question(q:QuestionType){
     props.my.form.splice(props.my.form.indexOf(q),1)
 }
-const button_active: ComputedRef<boolean> = computed(()=>{
-    if (questionid.value.length>0 && questiontype.value.length>0){
+
+function question_id_unique(sid:string){
+    return props.my.form.map(q => q.id).includes(sid) || "Question must have a unique id"
+}
+
+const button_inactive: ComputedRef<boolean> = computed(()=>{
+    if (questionid.value.length>0 && questiontype.value.length>0 && !!(question_id_unique(questionid.value))){
         return false
     } else {
         return true

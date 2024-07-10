@@ -10,7 +10,7 @@
 <script lang="ts" setup generic="T">
 import { ref } from 'vue';
 interface Props<T>{
-    click: (arg0:T)=>Promise<any>;
+    click: (arg0:T)=>Promise<Response>;
     arg0:T;
     disabled?:boolean
 }
@@ -20,13 +20,17 @@ const succeed_flag = ref(false)
 const loading_flag = ref(false)
 
 function reclick(){
-    props.click(props.arg0).then(() =>{
+    props.click(props.arg0).then((r) =>{
+        console.log('status', r.status)
+        if (!String(r.status).startsWith('2')){
+            throw r
+        }
         loading_flag.value = false
         succeed_flag.value=true
         setTimeout(() => {succeed_flag.value=false},1000)
-    }).catch( (e) => {
+    }).catch( (e:Response) => {
         loading_flag.value = false
-        alert(e.toString())
+        alert(e.statusText)
     })
     loading_flag.value = true
 }

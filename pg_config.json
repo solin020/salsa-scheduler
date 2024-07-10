@@ -1,0 +1,10 @@
+{
+    "transforms":[
+        {
+            "mode": "sql",
+            "include": "**/queries/*.sql",
+            "emitTemplate": "{{dir}}/{{name}}.queries.ts"
+        }
+    ],
+    "srcDir": "./src/"
+}

@@ -4,11 +4,14 @@ import 'vuetify/styles'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
-import VCalendar from 'v-calendar'
-import 'v-calendar/style.css'
+import '@mdi/font/css/materialdesignicons.css'
 import '@/css/main.css'
+import { id_regex_test } from './regexes'
+import 'v-calendar/style.css'
+import VCalendar from 'v-calendar'
+
 const vuetify = createVuetify({
   components,
   directives
 })
-createApp(App).use(vuetify).use(VCalendar, {}).mount('#app')
+createApp(App).use(vuetify).use(VCalendar).mount('#app')

@@ -1,29 +1,34 @@
 <template>
     <ViewSlider 
-        :my="(current_question as SliderType)" 
+        :my="current_question" 
         v-if="current_question.type==='slider'"
         :answers="answers"
-        :advance_question="advance_question"/>
+        :advance_question="advance_question"
+        :key="current_question.id"/>
     <ViewTextbox 
-        :my="(current_question as TextboxType)" 
-        v-else-if="current_question.type==='textbox'"
+        :my="current_question " 
+        v-if="current_question.type==='textbox'"
         :answers="answers"
-        :advance_question="advance_question"/>
+        :advance_question="advance_question"
+        :key="current_question.id"/>
     <ViewSingleChoiceRadio 
-        :my="(current_question as SingleChoiceRadioType)" 
-        v-else-if="current_question.type==='single-choice-radio'"
+        :my="current_question" 
+        v-if="current_question.type==='single-choice-radio'"
         :answers="answers"
-        :advance_question="advance_question"/>
+        :advance_question="advance_question"
+        :key="current_question.id"/>
     <ViewSingleChoiceDropdown 
-        :my="(current_question as SingleChoiceDropdownType)" 
-        v-else-if="current_question.type==='single-choice-dropdown'"
+        :my="current_question" 
+        v-if="current_question.type==='single-choice-dropdown'"
         :answers="answers"
-        :advance_question="advance_question"/>
+        :advance_question="advance_question"
+        :key="current_question.id"/>
     <ViewMultipleChoiceCheckbox 
-        :my="(current_question as MultipleChoiceCheckboxType)" 
-        v-else-if="current_question.type==='multiple-choice-checkbox'"
+        :my="current_question" 
+        v-if="current_question.type==='multiple-choice-checkbox'"
         :answers="answers"
-        :advance_question="advance_question"/>
+        :advance_question="advance_question"
+        :key="current_question.id"/>
 </template>
 <script setup lang="ts">
 import {type Ema, 

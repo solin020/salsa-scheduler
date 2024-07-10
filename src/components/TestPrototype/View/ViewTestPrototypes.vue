@@ -1,18 +1,17 @@
 <template>
-    <v-select v-model="test_id" :items="test_prototypes" label="Select Test Prototype"/>
-    <template v-for="tid in props.test_prototypes">
-        <ViewTestPrototype  :id="test_id" v-if="test_id===tid"/>
+    <v-select v-model="test_id" :items="test_prototype_ids" label="Select Test Prototype"/>
+    <template v-for="tp in test_prototypes">
+        <ViewTestPrototype  :tp="tp" v-if="test_id===tp.id"/>
     </template>
 </template>
 <script setup lang="ts">
-import {ref, type Ref, inject} from 'vue'
-import { project_key } from '@/injectkeys'
+import {ref, type Ref, inject, computed} from 'vue'
+import { project_key, test_prototypes_key } from '@/injectkeys'
 import ViewTestPrototype from './ViewTestPrototype.vue'
 const project = inject(project_key)!
-interface Props{
-    test_prototypes: string[]
-}
-const props = defineProps<Props>()
+const test_prototypes = inject(test_prototypes_key)!
+const test_prototype_ids = computed(()=>test_prototypes.value.map(tp=>tp.id))
+
 const test_id = ref('')
 
 </script>

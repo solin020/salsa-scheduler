@@ -39,6 +39,16 @@ export class DefaultService {
         });
     }
     /**
+     * Coordinator Upload Response File
+     * @param subjectId
+     * @param scheduleId
+     * @param testPrototypeId
+     * @param formData
+     * @returns any Successful Response
+     * @throws ApiError
+     */
+    
+    /**
      * Test Get Client
      * @returns any Successful Response
      * @throws ApiError
@@ -488,6 +498,13 @@ export class DefaultService {
             },
         });
     }
+    /**
+     * Get Message Response Transcriptions
+     * @param scheduleId
+     * @returns Transcription Successful Response
+     * @throws ApiError
+     */
+    
     /**
      * Device Get Test Prototype
      * @param id

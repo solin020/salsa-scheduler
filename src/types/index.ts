@@ -1,16 +1,112 @@
-export type { Audio } from './models/Audio';
-export type { Ema, QuestionType } from './models/Ema';
-export type { Image } from './models/Image';
-export type { MultipleChoiceCheckbox } from './models/MultipleChoiceCheckbox';
-export type { Recording } from './models/Recording';
-export type { SingleChoiceDropdown } from './models/SingleChoiceDropdown';
-export type { SingleChoiceRadio } from './models/SingleChoiceRadio';
-export type { Slider } from './models/Slider';
-export type { Textbox } from './models/Textbox';
-export type { Video } from './models/Video';
-export type { Stimulus } from './models/TestPrototype'
-export type { TestPrototype } from './models/TestPrototype'
-export type { VideoRecording } from './models/VideoRecording'
-export type { PictureCapture } from './models/PictureCapture'
+export type Audio = {
+    type: 'audio'
+    id: string
+    uri: string
+    autoadvance?: boolean
+    autoplay?:boolean
+    hide_early?:boolean
+    hide_controls?:boolean
+    duration? : number
+    file:File[]
+}
+export type QuestionType = (Textbox | Slider | SingleChoiceDropdown | SingleChoiceRadio | MultipleChoiceCheckbox)
+export type Ema = {
+    type: 'ema'
+    id: string
+    form: QuestionType[]
+}
 
+export type Image = {
+    type: 'image'
+    id: string
+    uri: string
+    autoadvance? :boolean
+    hide_early? :boolean
+    duration?: number
+    file:File[]
+}
+export type MultipleChoiceCheckbox = {
+    type: 'multiple-choice-checkbox'
+    label: string
+    id: string
+    options: Array<string>
+}
+export type PictureCapture = {
+    type: 'picture-capture'
+    id: string
+}
+export type Recording = {
+    type: 'recording'
+    id: string
+    autoadvance?: boolean
+    autoplay?: boolean
+    hide_early?: boolean
+    hide_controls?: boolean
+    duration?: number
+}
+
+export type SingleChoiceDropdown = {
+    type: 'single-choice-dropdown'
+    label: string
+    id: string
+    options: Array<string>
+}
+export type SingleChoiceRadio = {
+    type: 'single-choice-radio'
+    label: string
+    id: string
+    options: Array<string>
+}
+export type Slider = {
+    type: 'slider'
+    label: string
+    id: string
+    min: number
+    max: number
+}
+
+export type Stimulus = (Ema|Audio|Video|Image|Recording|VideoRecording|PictureCapture)
+export type TestPrototype = {
+    id: string
+    stimuli: Stimulus[]
+    groups: string[]
+}
+export type TestPrototypeMeta = {
+    id: string
+    groups: string[]
+    response_stimuli: string[]
+}
+
+export type Textbox = {
+    type: 'textbox'
+    label: string
+    id: string
+}
+
+export type Video = {
+    type: 'video'
+    id: string
+    uri: string
+    autoadvance?: boolean
+    autoplay?:boolean
+    hide_early?:boolean
+    hide_controls?:boolean
+    duration?: number
+    file:File[]
+}
+
+export type VideoRecording = {
+    type: 'video-recording'
+    id: string
+    autoadvance: boolean
+    duration: (number | null)
+}
+
+export type TwilioInfo = {
+    project:string
+    account_sid:string
+    auth_token:string
+    phone_number:string
+    nickname:string
+}
 

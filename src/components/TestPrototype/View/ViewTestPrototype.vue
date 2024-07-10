@@ -7,6 +7,16 @@
             </div>
             <div v-else>
                 <div>
+                    <v-card>
+                        <v-card-title>Info</v-card-title>
+                        <v-card-text>
+                            <v-list>
+                                <v-list-item v-for="g in props.tp.groups">{{g}}</v-list-item>
+                            </v-list>
+                        </v-card-text>
+                    </v-card>
+                </div>
+                <div>
                     <v-btn @click="edit_mode=true">Edit this test prototype</v-btn>
                 </div>
                 <div>
@@ -20,17 +30,33 @@
                         <template #content>
                             <div v-if="current_stimulus" class="j_phone_sim">
                                 <h2>Phone Test Simulation</h2>
-                                <ViewAudio :my="(current_stimulus as AudioType)" :advance_stimulus="advance_stimulus" v-if="current_stimulus.type==='audio'"/>
-                                <ViewImage :my="(current_stimulus as ImageType)" :advance_stimulus="advance_stimulus" v-else-if="current_stimulus.type==='image'"/>
-                                <ViewVideo :my="(current_stimulus as VideoType)" :advance_stimulus="advance_stimulus" v-else-if="current_stimulus.type==='video'"/>
-                                <ViewRecording :my="(current_stimulus as RecordingType)"
+                                <ViewAudio 
+                                    :my="current_stimulus" 
                                     :advance_stimulus="advance_stimulus"
-                                    v-else-if="current_stimulus.type==='recording'"
-                                    :upload_files="upload_files"/>
-                                <ViewEma :my="(current_stimulus as EmaType)"
+                                     v-if="current_stimulus.type==='audio'"
+                                     :key="current_stimulus.id"
+                                     />
+                                <ViewImage 
+                                    :my="current_stimulus" 
+                                    :advance_stimulus="advance_stimulus" 
+                                    v-if="current_stimulus.type==='image'"
+                                    :key="current_stimulus.id"/>
+                                <ViewVideo 
+                                    :my="current_stimulus" 
+                                    :advance_stimulus="advance_stimulus" 
+                                    v-if="current_stimulus.type==='video'"
+                                    :key="current_stimulus.id"/>
+                                <ViewRecording 
+                                    :my="current_stimulus"
                                     :advance_stimulus="advance_stimulus"
-                                    v-else-if="current_stimulus.type==='ema'"
-                                    :upload_files="upload_files"/>
+                                    v-if="current_stimulus.type==='recording'"
+                                    :upload_files="upload_files"
+                                    :key="current_stimulus.id"/>
+                                <ViewEma :my="current_stimulus"
+                                    :advance_stimulus="advance_stimulus"
+                                    v-if="current_stimulus.type==='ema'"
+                                    :upload_files="upload_files"
+                                    :key="current_stimulus.id"/>
                             </div>
                             <div v-else>
                                 <j-btn :click="upload_test_results" :arg0="undefined">Submit test results</j-btn>
@@ -54,7 +80,7 @@ import ViewVideo from '@/components/TestPrototype/View/ViewVideo.vue'
 import AddTestPrototype from '../Add/AddTestPrototype.vue'
 import {type Ema as EmaType, type Image as ImageType, type Audio as AudioType, 
         type Video as VideoType, type Recording as RecordingType, type TestPrototype as TestPrototypeType,
-    type Stimulus as StimType} from '@/types'
+    type Stimulus as StimType, type TestPrototypeMeta} from '@/types'
 import {ref, type Ref, inject, computed, type ComputedRef}from 'vue'
 import { project_key } from '@/injectkeys'
 import { DefaultService } from '@/client'
@@ -76,15 +102,16 @@ function advance_stimulus(){
 
 function upload_test_results(_:undefined){
     // @ts-expect-error
-    return upload_message_response(upload_files.value, 'testsubject', my.value.id).then( () =>{
+    let response =  upload_message_response(upload_files.value, 'testsubject', my.value.id)
+    response.then( (r) =>{
         test_ready.value=false
     })
-
+    return response
 }
 
 
 interface Props{
-    id: string
+    tp: TestPrototypeMeta
 }
 const props = defineProps<Props>()
 const project = inject(project_key)!
@@ -98,17 +125,20 @@ const current_stimulus:ComputedRef<StimType|undefined> = computed(() =>{
 })
 const edit_mode = ref(false)
 //This exceedingly nasty code loads all of the test prototype's files into the browser
-DefaultService.getTestPrototypeFilesSalsaServerGetTestPrototypeFilesGet(props.id).then((pathlist) => {
+DefaultService.getTestPrototypeFilesSalsaServerGetTestPrototypeFilesGet(props.tp.id).then((pathlist) => {
         const full_pathlist = pathlist.map(
             filepath => ('/salsa/server/get-test-prototype-file?' + (new URLSearchParams({
-                id:props.id,
+                id:props.tp.id,
                 filepath: filepath
             })).toString())
         )
         const metadatapath = full_pathlist.filter(s => s.endsWith('metadata.json'))[0]
-        let tp: TestPrototypeType
         fetch(metadatapath).then( r=> r.json()).then(s =>{
-            tp = {id:props.id, stimuli:s}
+            let tp: TestPrototypeType = {
+                stimuli:s,
+                groups:props.tp.groups,
+                id:props.tp.id
+            }
             let filecount = 0
             for (let i=0; i<tp.stimuli.length;i++){
                 const stim = tp.stimuli[i]

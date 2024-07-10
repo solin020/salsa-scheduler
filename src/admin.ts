@@ -8,6 +8,13 @@ import VCalendar from 'v-calendar'
 import 'v-calendar/style.css'
 const vuetify = createVuetify({
   components,
-  directives
+  directives,
+  defaults: {
+    VBtn: {
+      color: 'primary',
+      variant: 'outlined',
+      rounded: true,
+    },
+  },
 })
 createApp(App).use(vuetify).use(VCalendar, {}).mount('#app')

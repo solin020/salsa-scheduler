@@ -1,9 +1,9 @@
 <template>
     <div class="j_mediadisplay">
         <div class="j_mediainput">
-            <div v-if="no_file"><input type="file" @input="submit_file($event)" class="j_mediainput" accept="image/png, image/jpeg"/></div>
-            <div>Automatically move on after a certain period of time?<input type="checkbox" v-model="props.my.autoadvance"/></div>
-            <div v-if="props.my.autoadvance">How many seconds to display image: <input  type="number" v-model="props.my.duration"/></div>
+            <div v-if="!props.my.hide_early">Move on from image automatically after a certain number of seconds?<input type="checkbox" v-model="props.my.autoadvance"/></div>
+            <div v-if="!props.my.autoadvance">Prevent participant from moving on past image for a certain number of seconds?<input type="checkbox" v-model="props.my.hide_early"/></div>
+            <div v-if="props.my.autoadvance || props.my.hide_early">Image display duration: <input type="number" v-model="props.my.duration"/> seconds</div>
         </div>
         <div class="j_media">
             <img :src="imagesrc"/>

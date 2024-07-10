@@ -1,8 +1,37 @@
 <template>
-    <v-text-field v-model="my.id" label="Enter test prototype's name"/>
-    <j-list :items="my.stimuli" :mime_methods="upload_mime_methods">
+    <v-text-field v-model="my.id" label="Enter test prototype's name" :rules="[id_regex_test, unique_test_prototype_id]"/>
+    <v-card>
+        <v-card-title>
+            Add test prototype to group
+        </v-card-title>
+        <v-card-text>
+            Groups: 
+            <v-chip v-for="g in my.groups">
+                <ruby style="ruby-position:under;">
+                    {{ g }}
+                    <rt 
+                      @click="my.groups.splice(my.groups.indexOf(g), 1)"
+                      style="cursor:pointer;"
+                    >
+                      ❌
+                    </rt>
+                </ruby>
+            </v-chip>
+        </v-card-text>
+        <v-card-actions>
+            <v-combobox 
+                v-model="new_group" 
+                label="Enter group name"
+                :items="groups"
+                :rules="[id_regex_test]"
+                />
+            <div/>
+            <v-btn @click="my.groups.push(new_group)">Add group</v-btn>
+        </v-card-actions>
+    </v-card>
+    <j-list :items="my.stimuli" :mime_methods="upload_mime_methods" v-if="my.id">
         <template #preamble>
-            <h2>Stimuli:</h2>
+            <h2>Drag stimuli files below or add manually</h2>
         </template>
         <template #renderer="{item:stim}">
             <div class="j_icont">
@@ -20,7 +49,7 @@
         </template>
         <template #postamble>
             <span>
-                <v-text-field label="Stimulus id" v-model="stimid"/>
+                <v-text-field :rules="[id_regex_test, stimulus_id_is_unique]" label="Stimulus id" v-model="stimid"/>
                 <v-select v-model="StimulusType" label="Stimulus type" :items="['audio', 'video', 'image', 'recording', 'ema']"/>
                 <v-btn @click="add_stim()" :disabled="button_active">Add stimulus ➕</v-btn> 
                 <j-btn :click="submit_test_prototype" :arg0="null" :disabled="not_has_stimuli">Upload test prototype</j-btn>
@@ -41,21 +70,40 @@ import {type Ema as EmaType, type Image as ImageType, type Audio as AudioType,
 import JList from '@/components/JList.vue'
 import JBtn from '@/components/JBtn.vue'
 import {ref, type Ref, inject, computed, type ComputedRef, reactive}from 'vue'
-import { project_key } from '@/injectkeys'
-import { files } from 'jszip'
-import { mapToStyles } from '@popperjs/core/lib/modifiers/computeStyles'
+import { project_key, 
+         test_prototypes_key, 
+         reload_test_prototypes_key, 
+         groups_key,
+         reload_groups_key } from '@/injectkeys'
+import { id_regex_test } from '@/regexes'
+
+
+const test_prototypes = inject(test_prototypes_key)!
+const reload_test_prototypes = inject(reload_test_prototypes_key)!
+const groups = inject(groups_key)!
+const reload_groups = inject(reload_groups_key)!
+
 
 interface Props {
     my?:TestPrototypeType
 }
 const props = defineProps<Props>()
 
-let my:TestPrototypeType = reactive({id:'', stimuli:[]})
+let my:TestPrototypeType = reactive({id:'', stimuli:[],  groups:[]})
 if (props.my){
     my = props.my
 }
+function reset(){
+    alert(`Test prototype ${my.id} uploaded succesfully!`)
+    console.log('tried reset')
+    my.stimuli = []
+    my.id = ''
+    my.groups=[]
+}
+
 
 const project = inject(project_key)!
+const new_group = ref('')
 function delete_stim(stim:StimulusType){
     my.stimuli.splice(my.stimuli.indexOf(stim), 1)
 }
@@ -171,21 +219,26 @@ upload_mime_methods.set('video/mp4', accept_video)
 
 
 
+function stimulus_id_is_unique(sid:string){
+    return !(my.stimuli.map(s => s.id).includes(sid))|| "Stimulus id must be unique"
+}
 
-
+function unique_test_prototype_id(sid:string){
+    return !(test_prototypes.value.map(s => s.id).includes(sid))|| 'Test prototype must have a unique id'
+}
 
 
 const button_active = computed(()=>{
-    if (stimid.value.length>0 && StimulusType.value.length>0){
+    if (stimid.value.length>0 && StimulusType.value.length>0 && stimulus_id_is_unique(stimid.value)===true){
         return false
     } else {
         return true
     }
 })
-const not_has_stimuli = computed(() => ! (my.stimuli.length>0))
+const not_has_stimuli = computed(() => !(my.stimuli.length>0))
 
 
-function submit_test_prototype(){
+async function submit_test_prototype(){
     const fdata = new FormData()
     const json_obj = []
     for (let s of my.stimuli){
@@ -198,13 +251,18 @@ function submit_test_prototype(){
         }
     }
     fdata.append('metadata.json', JSON.stringify(json_obj))
-    return fetch('/salsa/server/add-test-prototype?' + new URLSearchParams({
+
+    const response = fetch('/salsa/server/add-test-prototype?' + new URLSearchParams({
         project: project,
-        id: my.id
+        id: my.id,
+        groups: JSON.stringify(my.groups)
     }), {
         method:'POST',
         body:fdata
     })
+    response.then(() => reload_test_prototypes(), reload_groups())
+    response.then(() => reset())
+    return response
 }
 
 </script>
