@@ -30,8 +30,14 @@ export default defineConfig({
     rollupOptions: {
       input: {
         coordinator: resolve(__dirname, 'coordinator.html'),
-        admin: resolve(__dirname, 'admin.html')
+        admin: resolve(__dirname, 'admin.html'),
+        phonesim: resolve(__dirname, 'phonesim.html')
       },
+    },
+    minify: false,
+    terserOptions: {
+      compress: false,
+      mangle: false,
     },
   },
 })

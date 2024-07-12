@@ -8,6 +8,9 @@
             <div v-if="props.my.autoplay">Prevent participant from accessing audio controls?
                 <input type="checkbox" v-model="props.my.hide_controls"/>
             </div>
+            Select audio file: <input type="file" 
+            accept="audio/wav"
+            @change="(e) => props.my.file = [(e.target! as HTMLInputElement).files![0]]" />
         </div>
         <div class="j_media">
             <audio :src="audiosrc" controls/>

@@ -15,7 +15,7 @@
 .j_header_container {
     grid-column-start: 1;
     grid-column-end: 2;
-    border-right: 5px solid tan;
+    border-right: 2px solid #3e648d;
 }
 .j_list_gap{
     height: 2rem;
@@ -39,7 +39,9 @@
 }
 .j_list_header{
     min-height: 2rem;
-    width: 100%;
+    width: 80%;
+    margin-left: 20px;
+    margin-right: 20px;
     &.j_grabbable{
         z-index:1;
     }

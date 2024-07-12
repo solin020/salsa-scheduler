@@ -6,8 +6,12 @@
             </v-card-title>
             <v-card-text>
                 <v-form>
-                    <v-text-field density="compact" v-model="my.schedule_id" label="Enter schedule prototype name"/>
-                    <v-select density="compact" :items="[twilio_nicknames]" label="Select twilio account to link to this schedule" v-model="my.twilio_info"/>
+                    <v-text-field 
+                        style="width: 30vw;"
+                        density="compact" v-model="my.schedule_id" label="Enter schedule prototype name"/>
+                    <v-select 
+                        style="width: 30vw;"
+                    density="compact" :items="[twilio_nicknames]" label="Select twilio config nickname" v-model="my.twilio_info"/>
                 </v-form>
             </v-card-text>
             <v-card>
@@ -62,6 +66,7 @@
                                         </v-card-text>
                                     </v-card>
                                     <v-btn @click="add_test(phase.spec)">Add a new testdate</v-btn>
+                                    <v-btn @click="delete_phase(phase)">Add a new testdate</v-btn>
                                 </v-col>
                                 <v-col cols="12" lg="9">
                                     <v-container >
@@ -284,16 +289,15 @@ function add_phase(){
     })
 }
 
-function check_inherit(phase: SchedulePrototype<'website'>['phases'][number]){
-    return (v:string)=>{
-        if (v==='inherit' && !(phase.prototype_selection || my.value.prototype_selection)){
-            return `Inherit may not be used unless either the containing phase or schedule have a 
-                    test prototype choice to inherit from.`
-        } else{
-            return true
+function delete_phase(p:SchedulePrototype<'website'>['phases'][number]){
+    for (let i = 0; i<my.value.phases.length; i++){
+        if (my.value.phases[i].phase_id === p.phase_id){
+            my.value.phases.splice(i, 1)
+            break
         }
     }
 }
+
 
 
 function rainbow(numOfSteps:number, step:number) {

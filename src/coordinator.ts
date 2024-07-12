@@ -6,9 +6,10 @@ import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import '@mdi/font/css/materialdesignicons.css'
 import '@/css/main.css'
-import { id_regex_test } from './regexes'
 import 'v-calendar/style.css'
 import VCalendar from 'v-calendar'
+
+
 
 const vuetify = createVuetify({
   components,

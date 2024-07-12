@@ -3,42 +3,45 @@
     </div>
     <div class="j_list_container">
         <div class="j_header_container">
+            <br/>
             <div class="j_list_header">
                 <slot name="preamble"/>
             </div>
             <div class="j_divider"/>
-            <template v-for="(item, idx) in props.items">
+            <div style="overflow-y: scroll; max-height: 50vh;">
+                <template v-for="(item, idx) in props.items">
+                        <div
+                            :class="{
+                                j_list_gap: idx!==active_gap,
+                                j_expand_gap: idx===active_gap
+                            }"
+                            @dragenter="gap_dragenter($event, idx)"
+                            @dragleave="gap_dragleave($event)"
+                            @dragover="gap_dragover($event)"
+                            @drop="header_drop($event, idx)"
+                        />
+                        <v-btn
+                            size="medium"
+                            draggable="true"
+                            :class="{j_list_header:true, j_viewing:item.id===active_item, j_grabbable:true}"
+                            @dragstart="header_dragstart($event, idx)"
+                            @dragend="header_dragend($event)"
+                            @click="header_click(item.id)"
+                            >
+                            <span>{{item.id}}</span>
+                        </v-btn>
+                </template>
                 <div
                     :class="{
-                        j_list_gap: idx!==active_gap, 
-                        j_expand_gap: idx===active_gap
-                    }"
-                    @dragenter="gap_dragenter($event, idx)"
+                            j_list_gap: -1!==active_gap, 
+                            j_expand_gap: -1===active_gap, 
+                        }"
+                    @dragenter="gap_dragenter($event, -1)"
                     @dragleave="gap_dragleave($event)"
                     @dragover="gap_dragover($event)"
-                    @drop="header_drop($event, idx)"
-                />
-                <v-btn  
-                    size="medium"
-                    draggable="true"
-                    :class="{j_list_header:true, j_viewing:item.id===active_item, j_grabbable:true}"
-                    @dragstart="header_dragstart($event, idx)"
-                    @dragend="header_dragend($event)"
-                    @click="header_click(item.id)"
-                    >
-                    <span>{{item.id}}</span>
-                </v-btn>
-            </template>
-            <div
-                :class="{
-                        j_list_gap: -1!==active_gap, 
-                        j_expand_gap: -1===active_gap, 
-                    }"
-                @dragenter="gap_dragenter($event, -1)"
-                @dragleave="gap_dragleave($event)"
-                @dragover="gap_dragover($event)"
-                @drop="header_drop($event, -1)"
-                />
+                    @drop="header_drop($event, -1)"
+                    />
+            </div>
             <div class="j_divider"/>
             <div class="j_list_header">
                 <slot name="postamble"/>

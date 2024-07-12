@@ -8,6 +8,9 @@
             <div v-if="props.my.autoplay">Prevent participant from accessing video controls?
                 <input type="checkbox" v-model="props.my.hide_controls"/>
             </div>
+            Select video file: <input type="file" 
+            accept="video/mp4"
+            @change="(e) => props.my.file = [(e.target! as HTMLInputElement).files![0]]" />
         </div>
         <div class="j_media">
             <video :src="videosrc" controls/>

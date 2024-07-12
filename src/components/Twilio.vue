@@ -1,71 +1,73 @@
 <template>
-    <v-card>
-        <v-card-title>Twilio info</v-card-title>
-        <v-container>
-            <v-row no-gutters>
-                <v-col :cols="12" :lg="2">
-                    <v-text-field label="Twilio information nickname" v-model="new_tw_nickname"/>
-                </v-col>
-                <v-col :cols="12" :lg="2">
-                    <v-text-field label="Account sid" v-model="new_tw_account_sid"/>
-                </v-col>
-                <v-col :cols="12" :lg="2">
-                    <v-text-field label="Auth token" v-model="new_tw_auth_token"/>
-                </v-col>
-                <v-col :cols="12" :lg="2">
-                    <v-text-field label="Phone number" v-model="new_tw_phone_number"/>
-                </v-col>
-                <v-col :cols="12" :lg="2">
-                    <j-btn :click="upload_new" :arg0="undefined">Upload new twilio information</j-btn>
-                </v-col>
-            </v-row>
-            <v-row v-for = "tw, idx in twilio_infos" no-gutters>
-                <v-col :cols="12" :lg="2">
-                    <template v-if="active_idx===idx">
-                        <v-text-field label="Twilio information nickname" v-model="tw.nickname"/>
-                    </template>
-                    <template v-else>
-                        {{tw.nickname}}
-                    </template>
-                </v-col>
-                <v-col :cols="12" :lg="2">
-                    <template v-if="active_idx===idx">
-                        <v-text-field label="Account sid" v-model="tw.account_sid"/>
-                    </template>
-                    <template v-else>
-                        {{tw.account_sid}}
-                    </template>
-                </v-col>
-                <v-col :cols="12" :lg="2">
-                    <template v-if="active_idx===idx">
-                        <v-text-field label="Auth token" v-model="tw.auth_token"/>
-                    </template>
-                    <template v-else>
-                        {{tw.auth_token}}
-                    </template>
-                </v-col>
-                <v-col :cols="12" :lg="2">
-                    <template v-if="active_idx===idx">
-                        <v-text-field label="Phone number" v-model="tw.phone_number"/>
-                    </template>
-                    <template v-else>
-                        {{tw.phone_number}}
-                    </template>
-                </v-col>
-                <v-col :cols="12" :lg="2" v-if="active_idx===idx">
-                    <j-btn :click="upload_existing" :arg0="tw">Update twilio information</j-btn>
-                </v-col>
-                <v-col :cols="12" :lg="2">
-                    <template v-if="active_idx===idx">
-                        <v-btn @click="active_idx=undefined">Undo</v-btn>
-                    </template>
-                    <template v-else>
-                        <v-btn @click="active_idx=idx">Edit?</v-btn>
-                    </template>
-                </v-col>
-            </v-row>
-        </v-container>
-    </v-card>
+    <br/>
+    <v-container style="width: 100 vw;">
+        <v-row no-gutters>
+            <v-col :cols="12" :lg="2">
+                <v-text-field label="Config nickname" v-model="new_tw_nickname"/>
+            </v-col>
+            <v-col :cols="12" :lg="2">
+                <v-text-field label="Account sid" v-model="new_tw_account_sid"/>
+            </v-col>
+            <v-col :cols="12" :lg="2">
+                <v-text-field label="Auth token" v-model="new_tw_auth_token"/>
+            </v-col>
+            <v-col :cols="12" :lg="2">
+                <v-text-field label="Phone number" v-model="new_tw_phone_number"/>
+            </v-col>
+            <v-col :cols="12" :lg="2">
+            </v-col>
+        </v-row>
+        <v-row>
+            <v-col :ciks="12" :lg="6">
+                <j-btn :click="upload_new" :arg0="undefined">Save new Twilio configuration</j-btn>
+            </v-col>
+        </v-row>
+        <v-row v-for = "tw, idx in twilio_infos" no-gutters>
+            <v-col :cols="12" :lg="2">
+                <template v-if="active_idx===idx">
+                    <v-text-field label="Twilio information nickname" v-model="tw.nickname"/>
+                </template>
+                <template v-else>
+                    {{tw.nickname}}
+                </template>
+            </v-col>
+            <v-col :cols="12" :lg="2">
+                <template v-if="active_idx===idx">
+                    <v-text-field label="Account sid" v-model="tw.account_sid"/>
+                </template>
+                <template v-else>
+                    {{tw.account_sid}}
+                </template>
+            </v-col>
+            <v-col :cols="12" :lg="2">
+                <template v-if="active_idx===idx">
+                    <v-text-field label="Auth token" v-model="tw.auth_token"/>
+                </template>
+                <template v-else>
+                    {{tw.auth_token}}
+                </template>
+            </v-col>
+            <v-col :cols="12" :lg="2">
+                <template v-if="active_idx===idx">
+                    <v-text-field label="Phone number" v-model="tw.phone_number"/>
+                </template>
+                <template v-else>
+                    {{tw.phone_number}}
+                </template>
+            </v-col>
+            <v-col :cols="12" :lg="2" v-if="active_idx===idx">
+                <j-btn :click="upload_existing" :arg0="tw">Update Twilio configuration</j-btn>
+            </v-col>
+            <v-col :cols="12" :lg="2">
+                <template v-if="active_idx===idx">
+                    <v-btn @click="active_idx=undefined">Undo</v-btn>
+                </template>
+                <template v-else>
+                    <v-btn @click="active_idx=idx">Edit?</v-btn>
+                </template>
+            </v-col>
+        </v-row>
+    </v-container>
 </template>
 <script setup lang="ts">
 import {inject, ref, type Ref} from 'vue'

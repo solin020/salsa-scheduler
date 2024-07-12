@@ -23,5 +23,7 @@ export const twilio_key = Symbol() as InjectionKey<Ref<TwilioInfo[]>>
 export const reload_twilio_key = Symbol() as InjectionKey<Function>
 export const schedule_prototype_list_key = Symbol() as InjectionKey<Ref<SchedulePrototype<'database'>[]>>
 export const reload_schedule_prototypes_key = Symbol() as InjectionKey<Function>
-
+export const coordinator_id_key = Symbol() as InjectionKey<string>
+export const sim_test_prototype_id_key = Symbol() as InjectionKey<string>
+export const pinia_key = Symbol() as InjectionKey<any>
 

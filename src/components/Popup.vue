@@ -3,6 +3,7 @@
     <dialog ref="dialogref">
         <template v-if="dialog_open">
             <VBtn @click="close_dialog"><slot name="close">Close</slot></VBtn>
+            <br/>
             <slot name="content"></slot>
         </template>
     </dialog>
@@ -17,10 +18,18 @@ function open_dialog(){
         dialogref.value.showModal()
     }
 }
+interface Props{
+    afterclose?: Function
+}
+const props = defineProps<Props>()
+
 function close_dialog(){
     if (dialogref.value){
         dialog_open.value=false
         dialogref.value.close()
+        if (props.afterclose){
+            props.afterclose()
+        }
     }
 }
 </script>

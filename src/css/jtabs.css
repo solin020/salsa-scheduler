@@ -2,12 +2,12 @@
     display: flex;
     flex-wrap:wrap;
     padding: 10px 0 0 0;
-    border-bottom: solid tan 5px;
+    border-bottom: solid #3e648d 2px;
 }
 
 .j_folderline{
-    background-color:tan;
-    height:5px;
+    background-color:#3e648d;
+    height:2px;
     z-index:1;
 }
 
@@ -19,6 +19,8 @@
     border-width: 5px 5px 0 5px;
     border-style: outset;
     border-color:lightgray;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 10px;
     text-align:center;
     vertical-align:top;
     z-index:0;
@@ -28,9 +30,9 @@
     z-index:0;
     &.j_activetab{
         background-color: beige;
-        border-color:blue;
+        border-color:#3e648d;
         &:hover{
-            background-color: lightgreen;
+            background-color: tan;
             transition: background-color 0.5s;  
         }
         z-index:2

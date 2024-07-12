@@ -24,8 +24,9 @@
                 label="Enter group name"
                 :items="groups"
                 :rules="[id_regex_test]"
+                style="width: 30vw;"
                 />
-            <div/>
+            <br/>
             <v-btn @click="my.groups.push(new_group)">Add group</v-btn>
         </v-card-actions>
     </v-card>

@@ -1,16 +1,26 @@
 <template>
-    <v-text-field :rules="[id_regex_test]" v-model="participant_id" label="Enter participant's study id (also used as the code for participant login)"/>
-    <v-text-field v-model="phone_number" label="Enter participant's phone number"/>
-    <timezone-selector :tz="participant_timezone"/>
-    <v-select label="schedule prototype id" :items="schedule_prototype_ids" v-model="schedule_prototype_id"/>
+    <v-text-field 
+        style="width: 30vw;"
+        :rules="[id_regex_test]" v-model="participant_id" label="Enter participant's study id (also used as the code for participant login)"/>
+    <v-text-field 
+        style="width: 30vw;"
+        v-model="phone_number" label="Enter participant's phone number"/>
+    <timezone-selector 
+        style="width: 30vw;"
+        :tz="participant_timezone"/>
+    <v-select 
+        style="width: 30vw;"
+        label="schedule prototype id" :items="schedule_prototype_ids" v-model="schedule_prototype_id"/>
     <h1>  Select the participant's start date below to view a preview of the participant's schedule before deploying </h1>
     <date-picker 
                     v-model="start_date" 
                     :attributes="preview_events"
                     :rows="4"
                     :columns="3"/>
+    <br/>
     <v-btn @click="view_preview()">Preview participant schedule before deployment</v-btn>
-    <j-btn :click="upload_participant" :arg0="undefined" v-if="preview_schedule">Save participant and deploy schedule</j-btn>
+    <br/>
+    <j-btn :click="upload_participant" :arg0="undefined" :disabled="!(preview_schedule)">Save participant and deploy schedule</j-btn>
 
 </template>
 <script setup lang="ts">

@@ -95,14 +95,14 @@ class SchedulePrototype(SQLModel, table=True):
 class StimulusResult(SQLModel, table=True):
     __tablename__ = "stimulus_result"
     project: str
-    schedule_id: str = Field(primary_key=True)
-    participant_id: str
+    schedule_id: str 
+    participant_id: str = Field(primary_key=True)
     formal_timestamp: datetime = Field(sa_column=Column(sqlalchemy.types.DateTime(timezone=True)))
     real_timestamp: datetime = Field(sa_column=Column(sqlalchemy.types.DateTime(timezone=True)))
     miscellaneous: dict = Field(sa_column=Column(JSON), default={})
-    test_prototype_id: str
-    stimulus_id: str
-    sequence_no: int
+    test_prototype_id: str = Field(primary_key=True)
+    stimulus_id: str = Field(primary_key=True)
+    sequence_no: int = Field(primary_key=True)
     quality: str
     schedule_prototype_id: str
 
@@ -144,6 +144,8 @@ async def get_db(r:Request) -> AsyncSession: # type: ignore
     async with async_session() as session:
         await session.execute(text(f'CALL salsa_login(:x)'), {'x':email})
         yield session
+
+
 
 
 async def update_users(): # type: ignore

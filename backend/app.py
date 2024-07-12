@@ -82,8 +82,9 @@ async def device_upload_response_file_nozip(r:Request, db:AsyncSession=Depends(g
                 stimulus_id=stimulus_id,
                 sequence_no=sequence_no,
                 real_timestamp=real_timestamp,
+                formal_timestamp=None,
                 schedule_prototype_id=participant.schedule_prototype_id
-            )
+            ) 
         else:
             print('inparams', test_prototype_id,stimulus_id, participant.id, sequence_no, flush=True)
             mr = (await db.exec(select(StimulusResult)
@@ -102,28 +103,51 @@ async def device_upload_response_file_nozip(r:Request, db:AsyncSession=Depends(g
                
 
 @app.post('/salsa/server/api/upload-response-file')
-async def coordinator_upload_response_file(subject_id:str, schedule_id:str, test_prototype_id:str, upload_zip_pgp: UploadFile, db:AsyncSession=Depends(get_db)):
-    if (participant := (await db.exec(
+async def coordinator_upload_response_file(r:Request,  db:AsyncSession=Depends(get_db)):
+    schedule_id = r.query_params['schedule_id']
+    test_prototype_id = r.query_params['test_prototype_id']
+    project = r.query_params['project']
+    subject_id = r.query_params['subject_id']
+    sequence_no = int(r.query_params['sequence_no'])
+    real_timestamp = datetime.fromisoformat(r.query_params['timestamp'].replace('Z','+00:00'))
+    infiles = []
+    names = []
+    form = await r.form()
+    fname, fbody = list(form.items())[0]
+    infiles.append(fbody)
+    names.append(fname)
+    stimulus_id = fname.split('.')[0] 
+    if not (await db.exec(
         select(Participant).where(Participant.id==subject_id)
-      )).one_or_none()):
-        now = datetime.now(timezone.utc).astimezone()
-        await save_message_response(
-            participant.projects[0], schedule_id, test_prototype_id, 
-            now.isoformat(), participant.id, 
-            upload_zip_pgp, db
-        )
-        mr = StimulusResult(
-            project=participant.projects[0],
-            schedule_id=schedule_id,
-            participant_id=participant.id,
-            timestamp=now,
-            test_prototype_id=test_prototype_id,
-            miscellaneous={}, 
-        )
-        db.add(mr)
+      )).one_or_none():
+        db.add(Participant(
+            projects=[project],
+            id= subject_id,
+            schedule_prototype_id=None,
+            schedule={},
+            twilio_nickname=None
+        ))
         await db.commit()
-        return Response('OK')
-    return Response('Invalid response code', status_code=406)
+    await save_message_response_nozip(
+        project, schedule_id, test_prototype_id, 
+        real_timestamp.isoformat(), subject_id, 
+        infiles, names, db
+    )
+    mr = StimulusResult(
+        project=project,
+        schedule_id=schedule_id,
+        participant_id=subject_id,
+        test_prototype_id=test_prototype_id,
+        miscellaneous={}, 
+        stimulus_id=stimulus_id,
+        sequence_no=sequence_no,
+        real_timestamp=real_timestamp,
+        formal_timestamp=None,
+        schedule_prototype_id=None
+    ) 
+    db.add(mr)
+    await db.commit()
+    return Response('OK')
 
 
 
@@ -392,6 +416,14 @@ async def device_get_test_prototype(id:str, db:AsyncSession=Depends(get_db)) -> 
         project=test_prototype.project,
         id=test_prototype.id
     ))
+
+@app.get('/salsa/server/get-test-prototype')
+async def server_get_test_prototype(id:str, db:AsyncSession=Depends(get_db)) -> FileResponse:
+    test_prototype = (await db.exec(select(TestPrototype).where(TestPrototype.id==id))).one()
+    return FileResponse(get_test_prototype_zip_path(
+        project=test_prototype.project,
+        id=test_prototype.id
+    ))
  
      
 @app.get('/salsa/device/get-schedule')
@@ -549,6 +581,18 @@ async def read_annotator():
 async def read_admin():
     return FileResponse(os.path.join(frontend_directory, 'dist/admin.html'))
 
+@app.get("/salsa/server/phonesim.html",)
+async def read_phonesim():
+    return FileResponse(os.path.join(frontend_directory, 'dist/phonesim.html'))
+
+
+@app.get("/salsa/server/dashboard/dashboard.html",)
+async def read_phonesim():
+    return FileResponse(os.path.join(frontend_directory, '/app/salsa-dashboard/dist/dashboard.html'))
+
+
+
 app.mount("/salsa/server/assets", StaticFiles(directory=os.path.join(frontend_directory, 'dist/assets')), name="dist")
+app.mount("/salsa/server/dashboard/assets", StaticFiles(directory='/app/salsa-dashboard/dist/assets'), name="dist")
 
 #endregion 

@@ -5,9 +5,13 @@
             <div v-if="!props.my.autoadvance">Prevent participant from moving on past image for a certain number of seconds?<input type="checkbox" v-model="props.my.hide_early"/></div>
             <div v-if="props.my.autoadvance || props.my.hide_early">Image display duration: <input type="number" v-model="props.my.duration"/> seconds</div>
         </div>
+        Select image: <input type="file" 
+            accept="image/jpeg,image/png"
+            @change="(e) => props.my.file = [(e.target! as HTMLInputElement).files![0]]" />
         <div class="j_media">
             <img :src="imagesrc"/>
         </div>
+
     </div>
 </template>
 <script setup lang="ts">

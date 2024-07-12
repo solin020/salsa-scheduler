@@ -1,6 +1,6 @@
 <template>
     <v-app>
-        <v-app-bar>
+        <v-app-bar style="background-image: linear-gradient(#6d94bf, #446e9b, #3e648d); color: white; background-repeat:no-repeat; filter: none; text-shadow: 0 -1px 0 rgba(0,0,0,0.3);">
             <v-app-bar-title>Salsa 2 Adminstrator interface for {{ email }}</v-app-bar-title>
         </v-app-bar>
         <v-main>
@@ -36,20 +36,30 @@
                 <template #content_coordinators>
                     <j-list :items="coordinators">
                         <template #preamble>
-                            Coordinators:
+                            View Existing Coordinators (click to edit):
                         </template>
                         <template #renderer="{item:coordinator}">
                             <v-card>
-                                <v-card-title>{{ coordinator.id }}</v-card-title>
+                                <v-card-title>Coordinator Project Assignments</v-card-title>
                                 <v-card-text>
-                                    <v-text-field :rules="[id_regex_test]" v-model="existing_coordinator_project"/>
-                                    <j-btn :click="add_existing_coordinator" :arg0="{id:coordinator.id}">Add {{ coordinator.id }} to new project</j-btn>
+                                    <v-card color="indigo" variant="outlined">
+                                        <v-card-title>{{ coordinator.id }}'s existing projects </v-card-title>
+                                        <v-card-actions>
+                                            <j-btn v-for="project in coordinator.projects" :click="delete_coordinator" :arg0="{id:coordinator.id, project}">
+                                                Remove {{ coordinator.id }} from project {{ project }}
+                                            </j-btn>
+                                        </v-card-actions>
+                                    </v-card>
+                                    <v-card color="indigo" variant="outlined">
+                                        <v-card-title>Add {{coordinator.id}} to another project</v-card-title>
+                                        <v-card-text>
+                                            <v-combobox :items="projects" label='New project name' :rules="[id_regex_test]" v-model="existing_coordinator_project"/>
+                                        </v-card-text>
+                                        <v-card-actions>
+                                            <j-btn :click="add_existing_coordinator" :arg0="{id:coordinator.id}">Add {{ coordinator.id }} to  project: {{existing_coordinator_project}}</j-btn>
+                                        </v-card-actions>
+                                    </v-card>
                                 </v-card-text>
-                                <v-card-actions>
-                                    <j-btn v-for="project in coordinator.projects" :click="delete_coordinator" :arg0="{id:coordinator.id, project}">
-                                        Remove coordinator from project {{ project }}
-                                    </j-btn>
-                                </v-card-actions>
                             </v-card>
                         </template>
                         <template #postamble>
@@ -58,10 +68,10 @@
                                 <v-card-text>
                                     <v-text-field :rules="[id_regex_test]" label="New Coordinator email" v-model="new_coordinator_id"/>
                                     <br/>
-                                    <v-text-field :rules="[id_regex_test]" label="Project name"  v-model="new_coordinator_project"/>
+                                    <v-combobox :items="projects" :rules="[id_regex_test]" label="New coordinator's project"  v-model="new_coordinator_project"/>
                                 </v-card-text>
                                 <v-card-actions>
-                                    <j-btn :click="add_coordinator" :arg0="{}">Add coordinator to new project</j-btn>
+                                    <j-btn :click="add_coordinator" :arg0="{}">Add new coordinator to project: {{ new_coordinator_project }}</j-btn>
                                 </v-card-actions>
                             </v-card>
                         </template>
@@ -94,7 +104,7 @@ DefaultService.getYourEmailSalsaServerApiGetYourEmailGet().then(
 
 function reload_projects(){
     DefaultService.adminGetProjectsSalsaServerApiAdminGetProjectsGet().then(
-        r => projects.value=r
+        r => projects.value=Array.from(new Set(r))
     )
 }
 reload_projects()

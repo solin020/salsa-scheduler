@@ -23,44 +23,12 @@
                     <v-btn @click="simulate_test()">Open test simulation window</v-btn>
                 </div>
                 <div v-if="test_ready">
-                    <Popup>
+                    <Popup :afterclose="()=> test_ready=false">
                         <template #open>
                             <v-btn>Begin test</v-btn>
                         </template>
                         <template #content>
-                            <div v-if="current_stimulus" class="j_phone_sim">
-                                <h2>Phone Test Simulation</h2>
-                                <ViewAudio 
-                                    :my="current_stimulus" 
-                                    :advance_stimulus="advance_stimulus"
-                                     v-if="current_stimulus.type==='audio'"
-                                     :key="current_stimulus.id"
-                                     />
-                                <ViewImage 
-                                    :my="current_stimulus" 
-                                    :advance_stimulus="advance_stimulus" 
-                                    v-if="current_stimulus.type==='image'"
-                                    :key="current_stimulus.id"/>
-                                <ViewVideo 
-                                    :my="current_stimulus" 
-                                    :advance_stimulus="advance_stimulus" 
-                                    v-if="current_stimulus.type==='video'"
-                                    :key="current_stimulus.id"/>
-                                <ViewRecording 
-                                    :my="current_stimulus"
-                                    :advance_stimulus="advance_stimulus"
-                                    v-if="current_stimulus.type==='recording'"
-                                    :upload_files="upload_files"
-                                    :key="current_stimulus.id"/>
-                                <ViewEma :my="current_stimulus"
-                                    :advance_stimulus="advance_stimulus"
-                                    v-if="current_stimulus.type==='ema'"
-                                    :upload_files="upload_files"
-                                    :key="current_stimulus.id"/>
-                            </div>
-                            <div v-else>
-                                <j-btn :click="upload_test_results" :arg0="undefined">Submit test results</j-btn>
-                            </div>
+                            <iframe  class="j_phone_sim" :src="`/salsa/server/phonesim.html?timestamp=${(new Date()).getTime()}`"></iframe>
                         </template>
                     </Popup>
                 </div>
@@ -81,33 +49,16 @@ import AddTestPrototype from '../Add/AddTestPrototype.vue'
 import {type Ema as EmaType, type Image as ImageType, type Audio as AudioType, 
         type Video as VideoType, type Recording as RecordingType, type TestPrototype as TestPrototypeType,
     type Stimulus as StimType, type TestPrototypeMeta} from '@/types'
-import {ref, type Ref, inject, computed, type ComputedRef}from 'vue'
-import { project_key } from '@/injectkeys'
+import {ref, type Ref, inject, provide, computed, type ComputedRef}from 'vue'
+import { project_key, sim_test_prototype_id_key } from '@/injectkeys'
 import { DefaultService } from '@/client'
 import upload_message_response from '@/pgp'
 import Popup from '@/components/Popup.vue'
 import JBtn from '@/components/JBtn.vue'
 
+
 console.log('test prototype setup')
 const active_idx = ref(0)
-function advance_stimulus(){
-    if(my.value){
-        if (active_idx.value + 1 >= my.value.stimuli.length){
-            active_idx.value=-1
-        } else{
-            active_idx.value++
-        }
-    }
-}
-
-function upload_test_results(_:undefined){
-    // @ts-expect-error
-    let response =  upload_message_response(upload_files.value, 'testsubject', my.value.id)
-    response.then( (r) =>{
-        test_ready.value=false
-    })
-    return response
-}
 
 
 interface Props{
@@ -161,10 +112,15 @@ DefaultService.getTestPrototypeFilesSalsaServerGetTestPrototypeFilesGet(props.tp
 )
 
 const test_ready=ref(false)
-function simulate_test(){
-    active_idx.value = 0
+async function simulate_test(){
+    const dbs = await window.indexedDB.databases()
+    dbs.forEach(db => { window.indexedDB.deleteDatabase(db.name!) })
     test_ready.value=true
 }
+
+//@ts-expect-error
+window.embed_test_prototype_id = props.tp.id
+
 </script>
 <style>
 .j_phone_sim{
