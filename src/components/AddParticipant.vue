@@ -1,27 +1,45 @@
 <template>
-    <v-text-field 
-        style="width: 30vw;"
-        :rules="[id_regex_test]" v-model="participant_id" label="Enter participant's study id (also used as the code for participant login)"/>
-    <v-text-field 
-        style="width: 30vw;"
-        v-model="phone_number" label="Enter participant's phone number"/>
-    <timezone-selector 
-        style="width: 30vw;"
-        :tz="participant_timezone"/>
-    <v-select 
-        style="width: 30vw;"
-        label="schedule prototype id" :items="schedule_prototype_ids" v-model="schedule_prototype_id"/>
-    <h1>  Select the participant's start date below to view a preview of the participant's schedule before deploying </h1>
-    <date-picker 
-                    v-model="start_date" 
-                    :attributes="preview_events"
-                    :rows="4"
-                    :columns="3"/>
-    <br/>
-    <v-btn @click="view_preview()">Preview participant schedule before deployment</v-btn>
-    <br/>
-    <j-btn :click="upload_participant" :arg0="undefined" :disabled="!(preview_schedule)">Save participant and deploy schedule</j-btn>
-
+    <j-breadcrumbs 
+        v-if="can_display"
+        :tabnames="['metadata','schedule']" :enableds="[ref(true), ref(true)]">
+        <template #header_metadata>
+            Enter participant information
+        </template>
+        <template #content_metadata>
+            <v-text-field
+                style="width: 30vw;"
+                :rules="[id_regex_test]" v-model="participant_id" label="Enter participant's study id (also used as the code for participant login)"/>
+            <v-text-field
+                style="width: 30vw;"
+                v-model="phone_number" label="Enter participant's phone number"/>
+            <timezone-selector
+                style="width: 30vw;"
+                :tz="participant_timezone"/>
+            <v-select
+                style="width: 30vw;"
+                label="schedule prototype id" :items="schedule_prototype_ids" v-model="schedule_prototype_id"/>
+        </template>
+        <template #header_schedule>
+            Preview schedule and deploy participant
+        </template>
+        <template #content_schedule>
+            <h1>  Select the participant's start date below to view a preview of the participant's schedule before deploying </h1>
+            <date-picker
+                            v-model="start_date"
+                            :attributes="preview_events"
+                            :select-attribute="{dot:true}"
+                            style="margin: 20px;"
+                            :rows="3"
+                            :columns="4"/>
+            <br/>
+            <v-btn @click="view_preview()">Preview participant schedule before deployment</v-btn>
+            <br/>
+            <j-btn :click="upload_participant" :arg0="undefined" :disabled="!(preview_schedule)">Save participant and deploy schedule</j-btn>
+        </template>
+    </j-breadcrumbs>
+    <h2 v-else>
+        You must create a schedule prototype before adding a participant 
+    </h2>
 </template>
 <script setup lang="ts">
 import type {SchedulePrototype, Timezone} from '../types/schedule'
@@ -32,12 +50,14 @@ import TimezoneSelector from './ScheduleDesigner/TimezoneSelector.vue'
 import { prepare_schedule_for_participant } from './ScheduleDesigner/schedule_logic'
 import JBtn from './JBtn.vue'
 import { id_regex_test } from '@/regexes'
+import JBreadcrumbs from './JBreadcrumbs.vue'
 
 const schedule_prototypes = inject(schedule_prototype_list_key)!
 const schedule_prototype_ids = computed(()=>schedule_prototypes.value.map(sp=>sp.schedule_id))
 const test_prototypes = inject(test_prototypes_key)!
 const test_prototype_ids = computed(()=>test_prototypes.value.map(tp=>tp.id))
 const project = inject(project_key)!
+const can_display = computed(()=>schedule_prototypes.value.length>0)
 
 
 const participant_id = ref("")

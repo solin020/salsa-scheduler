@@ -9,14 +9,11 @@
         </div>
         <div class="j_user_area">
             <h2>What the user sees</h2>
-            <h2>{{ props.my.label }}</h2>
-            <v-list>
-                <v-list-item v-for="option in props.my.options">
-                    {{ option }}
-                </v-list-item>
-            </v-list>
-            <v-select  :items="props.my.options" />
-            <v-btn :disabled="true">Continue</v-btn>
+            <div class="j_phone_sim">
+                <h2>{{ props.my.label }}</h2>
+                <v-select  :items="props.my.options" />
+                <v-btn :disabled="true" class="j_continue_button">Continue</v-btn>
+            </div>
         </div>
     </div>
 </template>

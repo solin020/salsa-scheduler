@@ -64,17 +64,24 @@ export type Slider = {
     min: number
     max: number
 }
+export type Breakpoint = {
+    type: 'breakpoint'
+    id: string
+}
 
-export type Stimulus = (Ema|Audio|Video|Image|Recording|VideoRecording|PictureCapture)
+
+export type Stimulus = (Ema|Audio|Video|Image|Recording|VideoRecording|PictureCapture|Breakpoint)
 export type TestPrototype = {
     id: string
     stimuli: Stimulus[]
     groups: string[]
+    randomized: boolean
 }
 export type TestPrototypeMeta = {
     id: string
     groups: string[]
     response_stimuli: string[]
+    randomized: boolean
 }
 
 export type Textbox = {

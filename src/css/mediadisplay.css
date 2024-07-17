@@ -4,10 +4,6 @@
 }
 .j_media{
     grid-row: 2 / 3;
-    max-width:100%;
-    background-color:white;
-    border: solid tan 5px;
-    min-height:300px;
 }
 .j_mediainput{
     grid-row: 1 / 2;

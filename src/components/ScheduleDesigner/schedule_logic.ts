@@ -239,6 +239,7 @@ export function prepare_schedule_for_participant(
         default_results: undefined,
         twilio_info:undefined,
         prototype_selection:undefined,
+        default_selection:ws.default_selection,
         timing:undefined,
         phases: ws.phases.map(
             p => {
@@ -249,7 +250,7 @@ export function prepare_schedule_for_participant(
                     get_timing_generator(p.spec.timing) :
                     base_timing_generator
                 return {
-                    phase_id:p.phase_id,
+                    id:p.id,
                     prototype_selection: undefined,
                     spec: {
                         cadence: p.spec.cadence,

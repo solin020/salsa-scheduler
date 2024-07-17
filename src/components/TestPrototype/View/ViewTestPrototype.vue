@@ -3,7 +3,7 @@
         <div v-if="my">
             <div v-if="edit_mode">
                 <v-btn @click="edit_mode=false">View this test prototype</v-btn>
-                <AddTestPrototype :my="my"/>
+                <add-test-prototype :my="my" :edit_existing="true"/>
             </div>
             <div v-else>
                 <div>
@@ -84,12 +84,8 @@ DefaultService.getTestPrototypeFilesSalsaServerGetTestPrototypeFilesGet(props.tp
             })).toString())
         )
         const metadatapath = full_pathlist.filter(s => s.endsWith('metadata.json'))[0]
-        fetch(metadatapath).then( r=> r.json()).then(s =>{
-            let tp: TestPrototypeType = {
-                stimuli:s,
-                groups:props.tp.groups,
-                id:props.tp.id
-            }
+        fetch(metadatapath).then( r=> r.json()).then( s=>{
+            let tp: TestPrototypeType = s
             let filecount = 0
             for (let i=0; i<tp.stimuli.length;i++){
                 const stim = tp.stimuli[i]
@@ -122,16 +118,3 @@ async function simulate_test(){
 window.embed_test_prototype_id = props.tp.id
 
 </script>
-<style>
-.j_phone_sim{
-    width: 380px;
-    height:660px;
-    border-bottom: solid black 10px;
-    border-top: solid black 10px;
-    border-left: solid black 3px;
-    border-right: solid black 3px;
-    border-radius: 30px;
-    background-color: white;
-    padding: 30px;
-}
-</style>

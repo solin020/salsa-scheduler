@@ -38,7 +38,7 @@
   }
 }
 .j_list_header{
-    min-height: 2rem;
+    min-height: 3rem;
     width: 80%;
     margin-left: 20px;
     margin-right: 20px;
@@ -50,5 +50,15 @@
     }
     &.j_grabbable::before{
         content: '↕️';
+    }
+    &.j_viewing{
+        box-shadow: 0 0 0 4px rgba(1, 48, 82, 0.15);
+        &:hover{
+            cursor:pointer;
+        }
+    }
+    &.j_list_special{
+        border-color:maroon;
+        border-width:8px;
     }
 }

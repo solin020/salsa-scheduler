@@ -1,6 +1,6 @@
 <template>
     <v-app>
-        <v-app-bar style="background-image: linear-gradient(#6d94bf, #446e9b, #3e648d); color: white; background-repeat:no-repeat; filter: none; text-shadow: 0 -1px 0 rgba(0,0,0,0.3);">
+        <v-app-bar style="background-image: var(--salsablue); color: white; background-repeat:no-repeat; filter: none; text-shadow: 0 -1px 0 rgba(0,0,0,0.3);">
             <v-app-bar-title>Salsa 2 Coordinator Interface for {{ email }}</v-app-bar-title>
         </v-app-bar>
         <v-main>

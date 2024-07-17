@@ -7,8 +7,11 @@
         </div>
         <div class="j_user_area">
             <h2>What the user sees</h2>
-            <v-text-field :label="props.my.label"/>
-            <v-btn :disabled="true">Continue</v-btn>
+            <div class="j_phone_sim">
+                <h2>{{ props.my.label }}</h2>
+                <v-text-field/>
+                <v-btn :disabled="true" class="j_continue_button">Continue</v-btn>
+            </div>
         </div>
     </div>
 </template>

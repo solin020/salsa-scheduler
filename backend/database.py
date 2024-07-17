@@ -52,6 +52,7 @@ class TestPrototype(SQLModel, table=True):
     project: str
     id: str = Field( primary_key=True)
     groups: list[str] = Field(sa_column=Column(ARRAY(TEXT)))
+    randomized:bool
 
 @dataclass
 class TwilioInfo(SQLModel, table=True):

@@ -1,19 +1,24 @@
 <template>
-    <v-form v-model="form_valid">
-        <v-card variant="outlined">
-            <v-card-title>
-                Schedule metadata
-            </v-card-title>
-            <v-card-text>
-                <v-form>
-                    <v-text-field 
-                        style="width: 30vw;"
-                        density="compact" v-model="my.schedule_id" label="Enter schedule prototype name"/>
-                    <v-select 
-                        style="width: 30vw;"
-                    density="compact" :items="[twilio_nicknames]" label="Select twilio config nickname" v-model="my.twilio_info"/>
-                </v-form>
-            </v-card-text>
+    <j-breadcrumbs 
+        v-if="can_display"
+        :tabnames="['metadata', 'phases', 'submit']" 
+        :enableds="enableds">
+        <template #header_metadata>
+            Configuration
+        </template>
+        <template #content_metadata>
+            <v-card>
+                <v-card-text>
+                    <v-form>
+                        <v-text-field
+                            style="width: 30vw;"
+                            density="compact" v-model="my.schedule_id" label="Enter schedule prototype name"/>
+                        <v-select
+                            style="width: 30vw;"
+                        density="compact" :items="[twilio_nicknames]" label="Select twilio config nickname" v-model="my.twilio_info"/>
+                    </v-form>
+                </v-card-text>
+            </v-card>
             <v-card>
                 <v-card-title>
                     Schedule level defaults
@@ -31,21 +36,86 @@
                         :my="my"
                         :parent_schedule="undefined"
                     />
+                    <br/>
+                    <span class="j-tooltip">
+                                        ⓘ
+                        <v-tooltip activator="parent" location="top">
+                            <p>
+                                By default Salsa will not show anything if a participant
+                                tries to use it on an unscheduled day.
+                            </p>
+                            <p>
+                                Use this option if you want to want them to access
+                                a default test prototype instead.
+                            </p>
+                        </v-tooltip>
+                    </span>
+                    <v-btn v-if="!my.default_selection"
+                        @click="my.default_selection={type:'fixed', test_prototype_id:''}"
+                        >Allow participants to take tests outside of the schedule?</v-btn>
+                    <template v-if="my.default_selection">
+                        <v-btn @click="my.default_selection=undefined">Remove outside of schedule tests</v-btn>
+                        <v-select
+                            :items="test_prototype_ids"
+                            label="test prototype for unscheduled test"
+                            v-model="my.default_selection.test_prototype_id"
+                        />
+                    </template>
                 </v-card-text>
             </v-card>
-        </v-card>
-        <v-card variant="outlined">
-            <v-card-title>
-                Schedule phases
-            </v-card-title>
-            <v-card-text>
-                <v-expansion-panels>
-                    <v-expansion-panel v-for="phase in my.phases" :title="`Phase ${phase.phase_id}`">
-                        <v-container>
-                            <v-row>
-                                <v-col cols="12" lg="3">
-                                    <v-text-field density="compact" v-model="phase.phase_id"/><br>
-                                    <v-select :items="['daily', 'weekly']" v-model="phase.spec.cadence" label="Schedule by days or weeks" /><br>
+        </template>
+        <template #header_phases>
+            Specify Phases
+        </template>
+        <template #content_phases>
+            <j-list :items=my.phases :fixed_order="true">
+                <template #preamble>
+                    Phases
+                </template>
+                <template #renderer="{item:phase}">
+                    <div class="j_icont">
+                        <div class="j_imain">
+                            <!--@vue-ignore-->
+                            <j-list 
+                                :fixed_order="true"
+                                :items="phase.spec.tests" 
+                            >
+                                <template #preamble>
+                                    <h2>Test dates ({{ phase.spec.cadence }})</h2>
+                                </template>
+                                <template #renderer="{item:test, idx}">
+                                    <v-card variant="outlined">
+                                            <v-card-text>
+                                                <template v-if="phase.spec.cadence==='daily'">
+                                                    Years after startdate: <v-number-input control-variant="stacked" density="compact"  :step="1" :min="0" v-model="phase.spec.tests[idx].datetime.year"/><br>
+                                                    Days after startdate: <v-number-input control-variant="stacked" density="compact"  :step="1" :min="0" v-model="phase.spec.tests[idx].datetime.day"/><br>
+                                                </template>
+                                                <template v-else-if="phase.spec.cadence==='weekly'">
+                                                    Weeks after startdate: <v-number-input control-variant="stacked" density="compact"  :step="1" :min="0" v-model="phase.spec.tests[idx].datetime.week"/>
+                                                    Weekday: <v-select
+                                                        :items="weekday_items"
+                                                        item-title="title"
+                                                        item-value="value"
+                                                        v-model="phase.spec.tests[idx].datetime.weekday"
+                                                    /><br>
+                                                </template>
+
+                                                </v-card-text>
+                                        </v-card>
+                                        <prototype-selection 
+                                                    :level="'entry'" 
+                                                    :my="phase.spec.tests[idx]"
+                                                    :parent_phase="phase"
+                                                    :parent_schedule="my"
+                                                />
+                                        <timing-selection 
+                                            :level="'entry'" 
+                                            :my="phase.spec.tests[idx]"
+                                            :parent_phase="phase"
+                                            :parent_schedule="my"
+                                        />
+                                </template>
+                                <template #postamble>
                                     <v-card>
                                         <v-card-title>
                                             Phase level defaults
@@ -66,93 +136,71 @@
                                         </v-card-text>
                                     </v-card>
                                     <v-btn @click="add_test(phase.spec)">Add a new testdate</v-btn>
-                                    <v-btn @click="delete_phase(phase)">Add a new testdate</v-btn>
-                                </v-col>
-                                <v-col cols="12" lg="9">
-                                    <v-container >
-                                        <v-row>
-                                            <v-col v-for="test, i in phase.spec.tests" :key="i" cols="12" lg="3">
-                                                <v-card variant="outlined">
-                                                    <v-card-text>
-                                                        <template v-if="phase.spec.cadence==='daily'">
-                                                            Years after startdate: <v-number-input control-variant="stacked" density="compact"  :step="1" :min="0" v-model="phase.spec.tests[i].datetime.year"/><br>
-                                                            Days after startdate: <v-number-input control-variant="stacked" density="compact"  :step="1" :min="0" v-model="phase.spec.tests[i].datetime.day"/><br>
-                                                        </template>
-                                                        <template v-else-if="phase.spec.cadence==='weekly'">
-                                                            Weeks after startdate: <v-number-input control-variant="stacked" density="compact"  :step="1" :min="0" v-model="phase.spec.tests[i].datetime.week"/>
-                                                            Weekday: <v-select
-                                                                :items="[{
-                                                                    title:'Sunday',
-                                                                    value:0
-                                                                },{
-                                                                    title:'Monday',
-                                                                    value:1
-                                                                },{
-                                                                    title:'Tuesday',
-                                                                    value:2
-                                                                },{
-                                                                    title:'Wednesday',
-                                                                    value:3
-                                                                },{
-                                                                    title:'Thursday',
-                                                                    value:4
-                                                                },{
-                                                                    title:'Friday',
-                                                                    value:5
-                                                                },{
-                                                                    title:'Saturday',
-                                                                    value:6
-                                                                },]"
-                                                                item-title="title"
-                                                                item-value="value"
-                                                                v-model="phase.spec.tests[i].datetime.weekday"
-                                                            /><br>
-                                                        </template>
-
-                                                        </v-card-text>
-                                                </v-card>
-                                                <prototype-selection 
-                                                            :level="'entry'" 
-                                                            :my="test"
-                                                            :parent_phase="phase"
-                                                            :parent_schedule="my"
-                                                        />
-                                                <timing-selection 
-                                                    :level="'entry'" 
-                                                    :my="test"
-                                                    :parent_phase="phase"
-                                                    :parent_schedule="my"
-                                                />
-                                            </v-col>
-                                        </v-row>
-                                    </v-container>
-                                </v-col>
-                            </v-row>
-                        </v-container>
-                    </v-expansion-panel>
-                </v-expansion-panels>
-            </v-card-text>
-        </v-card>
-        <v-card variant="outlined">
-            <v-btn @click="add_phase">Add a new phase</v-btn>
-        </v-card>
-        <v-card variant="outlined">
-            <v-card-title>
-                Select sample start date below to view a preview of the schedule
-            </v-card-title>
-            <v-card-text>
-                <date-picker 
-                    v-model="sample_startdate" 
-                    :attributes="preview_events"
-                    :rows="4"
-                    :columns="3"/>
-            </v-card-text>
-            <v-card-actions>
-                <v-btn @click="generate_preview()">Generate preview schedule</v-btn>
-            </v-card-actions>
-        </v-card>
-        <j-btn :click="upload_schedule" :arg0="undefined" >Upload schedule</j-btn>
-    </v-form>
+                                    <div class="j_idelete">
+                                        <v-btn @click="delete_phase(phase)">Delete phase</v-btn>
+                                    </div>
+                                </template>
+                            </j-list>
+                        </div>
+                    </div>
+                </template>
+                <template #postamble>
+                    <v-card variant="outlined">
+                        <v-select label="Phase schedule type" :items="['weekly', 'daily']" v-model="phase_schedule_type"/>
+                        <span class="j-tooltip">
+                            ⓘ
+                            <v-tooltip activator="parent" location="top">
+                                <p>
+                                    The "daily" option allows you to specify how many days and years
+                                    after the participant's start date each test prototype should be scheduled.
+                                </p>
+                                <p>
+                                    The "weekly" option allows you to specify on which week day and how many weeks
+                                    after the participant's start date each test prototype should be scheduled.
+                                </p>
+                            </v-tooltip>
+                        </span>
+                        <v-btn @click="add_phase">Add a new phase</v-btn>
+                    </v-card>
+                </template>
+            </j-list>
+        </template>
+        <template #header_submit>
+            Preview and submit
+        </template>
+        <template #content_submit>
+            <v-container fluid>
+                <v-row>
+                    <v-col :cols="12" :lg="9">
+                        <v-card variant="outlined">
+                            <v-card-title>
+                                Select sample start date below to view a preview of the schedule
+                            </v-card-title>
+                            <v-card-text>
+                                <date-picker
+                                    v-model="sample_startdate"
+                                    :attributes="preview_events"
+                                    style="margin: 20px;"
+                                    :select-attribute="{dot:true}"
+                                    :rows="3"
+                                    :columns="4"/>
+                            </v-card-text>
+                            <v-card-actions>
+                            </v-card-actions>
+                        </v-card>
+                    </v-col>
+                    <v-col :cols="12" :lg="3">
+                        <v-btn @click="generate_preview()">Generate preview schedule</v-btn>
+                        <br/>
+                        <j-btn :click="upload_schedule" :arg0="undefined" >Upload schedule</j-btn>
+                    </v-col>
+                </v-row>
+            </v-container>
+        </template>
+    </j-breadcrumbs>
+    <h2 v-else>
+        You must create test prototypes before adding a participant 
+    </h2>
 </template>
 <script setup lang="ts">
 import type {PhaseSpec, SchedulePrototype} from 'src/types/schedule'
@@ -164,18 +212,24 @@ import {ref, type Ref, computed, inject} from 'vue'
 import { prepare_schedule_for_participant,
     prepare_schedule_for_upload,
  } from './schedule_logic'
-import { test_prototypes_key, groups_key, twilio_key, project_key } from '@/injectkeys'
+import { test_prototypes_key, twilio_key, project_key, reload_schedule_prototypes_key, schedule_prototype_list_key } from '@/injectkeys'
 import JBtn from '../JBtn.vue'
+import JBreadcrumbs from '../JBreadcrumbs.vue'
+import JList from '../JList.vue'
 
 const test_prototypes = inject(test_prototypes_key)!
 const test_prototype_ids = computed(()=>test_prototypes.value.map(tp=>tp.id))
 const twilios = inject(twilio_key)!
 const twilio_nicknames = computed(()=>twilios.value.map(t=>t.nickname))
 const project = inject(project_key)!
+const reload_schedules = inject(reload_schedule_prototypes_key)!
 
 const sample_startdate = ref(new Date())
+const schedule_prototypes = inject(schedule_prototype_list_key)!
 
-const form_valid = ref(false)
+const can_display = computed(()=>test_prototypes.value.length>0)
+
+const phase_schedule_type: Ref<'daily'|'weekly'> = ref('weekly')
 
 
 
@@ -221,7 +275,13 @@ const preview_events = computed(()=>{
     }
 })
 
-
+const unique_id = function*(){
+    let i = 1
+    while (true){
+        yield i
+        i += 1
+    }
+}()
 
 function add_test(spec: PhaseSpec<'website'>){
     if (spec.cadence === 'daily'){
@@ -280,10 +340,10 @@ function add_test(spec: PhaseSpec<'website'>){
 
 function add_phase(){
     my.value.phases.push({
-        phase_id: 'new phase',
+        id: `phase_${unique_id.next().value}`,
         prototype_selection:undefined,
         spec: {
-            cadence: 'daily',
+            cadence: phase_schedule_type.value,
             tests:[]
         }
     })
@@ -291,7 +351,7 @@ function add_phase(){
 
 function delete_phase(p:SchedulePrototype<'website'>['phases'][number]){
     for (let i = 0; i<my.value.phases.length; i++){
-        if (my.value.phases[i].phase_id === p.phase_id){
+        if (my.value.phases[i].id === p.id){
             my.value.phases.splice(i, 1)
             break
         }
@@ -350,7 +410,55 @@ function upload_schedule(){
             body:JSON.stringify(body)
         }
     )
+    retval.then(r=>reload_schedules())
     return retval
+}
+
+const schedule_prototype_id_ready = computed(()=>{
+    return Boolean(my.value.schedule_id) && !(schedule_prototypes.value.map(s => s.schedule_id).includes(my.value.schedule_id))
+})
+
+const phases_ready = computed(()=>{
+    const phases = my.value.phases
+    return phases.length > 0 && phases.every(p=> p.spec.tests.length>0)
+})
+
+const enableds = [schedule_prototype_id_ready, phases_ready, ref(true)]
+
+const weekday_items = [{
+    title:'Sunday',
+    value:0
+},{
+    title:'Monday',
+    value:1
+},{
+    title:'Tuesday',
+    value:2
+},{
+    title:'Wednesday',
+    value:3
+},{
+    title:'Thursday',
+    value:4
+},{
+    title:'Friday',
+    value:5
+},{
+    title:'Saturday',
+    value:6
+}]
+function get_weekday(n:number):string{
+    return weekday_items.filter(i => i.value===n)[0].title
+}
+
+function test_render_daily(t:SchedulePrototype<'website'>['phases'][number]['spec']['tests'][number]){
+    //@ts-ignore-error
+    return `Year: ${t.datetime.year!} Day: ${t.datetime.day!}`
+}
+function test_render_weekly(t:SchedulePrototype<'website'>['phases'][number]['spec']['tests'][number]){
+    //@ts-ignore-error
+    return `Week: ${t.datetime.week!} Weekday: ${get_weekday(t.datetime.weekday!)}`
+
 }
 
 </script>

@@ -3,15 +3,58 @@
         <v-card-title>
             <span v-if="!toggleable">Test prototype</span>
             <!--@vue-ignore-->
-            <v-btn v-if="toggleable" @click="props.my.prototype_selection = {type:'per-patient', group:'', replace_after_sampling:false}">
-                Specify default test for {{ name }}?
+            <v-btn v-if="toggleable && !props.my.prototype_selection" @click="props.my.prototype_selection = {type:'per-patient', group:'', replace_after_sampling:false}">
+                Add default test
             </v-btn>
             <!--@vue-ignore-->
-            <v-btn  v-if="toggleable" @click="props.my.prototype_selection=undefined">
-                Remove default test for {{ name }}?
+            <v-btn  v-if="toggleable && props.my.prototype_selection" @click="props.my.prototype_selection=undefined">
+                Remove default test
             </v-btn>
         </v-card-title>
         <v-card-text v-if="props.my.prototype_selection">
+            <span class="j-tooltip">
+                ⓘ
+                <v-tooltip activator="parent" location="top">
+                    <p>There are several ways to specify what test prototype is displayed to the participant on which day</p>
+                    <ul>
+                        <li>
+                            <p>With the <em>Specific test prototype</em> option, you may specify exactly which prototype is shown.</p>
+                        </li>
+                        <li>
+                            <p>
+                               With the <em>Variable random prototype selection</em> option, you can have it instead be
+                               a random selection from one of the test prototype groups you have saved previously
+                               in the <em>Add Test Prototype</em> tab. 
+                            </p>
+                               <p>The randomization is different across all participants.</p>
+                            <p>
+                               For example, if you have a group of test PrototypeSelection
+                               numbered 1-5, with this option, participant_1 could be scheduled them in the order
+                               <strong>5,3,1,2,4</strong>, where as participant_2 would have the schedule
+                               <strong>3,4,5,2,1</strong>
+                            </p>
+                        </li>
+                        <li>
+                            <p>
+                                Instead, with the <em>Fixed random prototype selection</em> option, you can create a random
+                                selection which is shared across all participants. 
+                            </p>
+                            <p>
+                               For example, if you have a group of test PrototypeSelection
+                               numbered 1-5, with this option, participant_1 could be scheduled them in the order
+                               <strong>5,3,1,2,4</strong>, and  participant_2 would also have the schedule
+                               <strong>5,3,1,2,4</strong>
+                            </p>
+                        </li>
+                        <li>
+                            <p>With the <em>Inherit</em> option, the test prototype selection from the containing phase or schedule is copied.</p>
+                            <p>If you use one of the randomization options with selection without replacement, this feature guarantees
+                                that all of the random selections inheriting from the same source are different.
+                            </p>
+                        </li>
+                    </ul>
+                </v-tooltip>
+            </span>
             <v-select :items="[...(props.level!=='base'?[{
                 title:'Inherit',
                 value:'inherit'
@@ -19,10 +62,10 @@
                 title:'Specific test prototype',
                 value:'fixed'
             },{
-                title:'Random prototype per patient',
+                title:'Variable random prototype selection',
                 value:'per-patient'
             },{
-                title:'Random prototype shared across all patients',
+                title:'Fixed random prototype selection',
                 value:'same-across-patients'
             }]" v-model="props.my.prototype_selection.type" :rules="[validate]"/>
             <template v-if="props.my.prototype_selection.type==='fixed'">

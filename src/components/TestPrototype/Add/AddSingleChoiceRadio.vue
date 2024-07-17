@@ -9,13 +9,16 @@
         </div>
         <div class="j_user_area">
             <h2>What the user sees</h2>
-            <fieldset>
-                <div v-for="option in props.my.options">
-                    <input type="radio" :value="option" :name="props.my.id"/>
-                    <span>{{ option }}</span>
-                </div>
-            </fieldset>
-            <v-btn :disbaled="true">Continue</v-btn>
+            <div class="j_phone_sim">
+                <h2>{{ props.my.label }}</h2>
+                <fieldset>
+                    <div v-for="option in props.my.options">
+                        <input type="radio" :value="option" :name="props.my.id"/>
+                        <span>{{ option }}</span>
+                    </div>
+                </fieldset>
+                <v-btn :disbaled="true" class="j_continue_button">Continue</v-btn>
+            </div>
         </div>
     </div>
 </template>

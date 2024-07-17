@@ -9,16 +9,18 @@
         </div>
         <div class="j_user_area">
             <h2>What the user sees</h2>
-            <h2>{{ props.my.label }}</h2>
-            <div v-for="option in props.my.options"> 
-                <span>
-                    <input type="checkbox"
-                        v-model="response"
-                        :value="option"/>
-                    {{ option }}
-                </span>
+            <div class="j_phone_sim">
+                <h2>{{ props.my.label }}</h2>
+                <div v-for="option in props.my.options">
+                    <span>
+                        <input type="checkbox"
+                            v-model="response"
+                            :value="option"/>
+                        {{ option }}
+                    </span>
+                </div>
+                <v-btn :disabled="true" class="j_continue_button">Continue</v-btn>
             </div>
-            <v-btn :disabled="true">Continue</v-btn>
         </div>
     </div>
 </template>

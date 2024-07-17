@@ -155,7 +155,7 @@ export type SchedulePrototype<Location extends ScheduleLocation> = {
     twilio_info: Location extends ("database"|"website") ? string : undefined
     phases: 
     {
-        phase_id:string
+        id:string
         spec:PhaseSpec<Location>
         prototype_selection: TestPrototypeChoice<Location, 'phase'>
     }[]

@@ -461,12 +461,17 @@ async def coordinator_get_test_prototypes(project:str, db:AsyncSession=Depends(g
         async with aiofiles.open(get_test_prototype_file_path(tp.project, tp.id, 'metadata.json')) as f:
             metadata = json.loads(await f.read())
             response_stimuli = []
-            for m in metadata:
+            print(metadata, flush=True)
+            for m in metadata['stimuli']:
                 if m['type'] in ('recording', 'ema'):
                     response_stimuli.append(m['id'])
-            retval.append(
-                {'id':tp.id, 'project':tp.project, 'groups':tp.groups, 'response_stimuli':response_stimuli}
-            )
+            retval.append({
+                'id':tp.id, 
+                'project':tp.project, 
+                'groups':tp.groups, 
+                'response_stimuli':response_stimuli,
+                'randomized': tp.randomized
+            })
     return retval
 
 
@@ -493,6 +498,8 @@ async def add_test_prototype(r:Request, db:AsyncSession=Depends(get_db)):
     params = r.query_params
     project = params['project']
     id = params['id'] 
+    print('randmized!', params['randomized'], flush=True)
+    randomized = True if params['randomized'] == 'true'  else False
     groups:list[str] = json.loads(params['groups'])
     replace = False
     if (tp:=(await db.exec(select(TestPrototype).where(TestPrototype.project==project).where(TestPrototype.id==id))).one_or_none()):
@@ -506,14 +513,20 @@ async def add_test_prototype(r:Request, db:AsyncSession=Depends(get_db)):
         fdict = {}
         for k, v in form.items():
             fdict[k] = v
-        metadata_json=fdict.pop('metadata.json')
+        metadata_json=json.loads(fdict.pop('metadata.json'))
+        metadata_json_full = json.dumps({
+            'stimuli': metadata_json,
+            'groups': groups,
+            'randomized': randomized,
+            'id': id
+        })
         for k, v in fdict.items():
             filenames.append(k)
             infiles.append(v)
         await save_test_prototype(
             project=project,
             id_=id,
-            metadata_json=metadata_json,
+            metadata_json=metadata_json_full,
             infiles=infiles,
             filenames=filenames,
             replace=replace
@@ -521,7 +534,8 @@ async def add_test_prototype(r:Request, db:AsyncSession=Depends(get_db)):
     tp = TestPrototype(
         project=project,
         id=id,
-        groups=groups
+        groups=groups,
+        randomized=randomized
     )
     db.add(tp)
     await db.commit()

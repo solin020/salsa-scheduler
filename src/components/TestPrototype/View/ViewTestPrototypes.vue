@@ -1,5 +1,7 @@
 <template>
-    <v-select v-model="test_id" :items="test_prototype_ids" label="Select Test Prototype"/>
+    <v-select 
+        class="j-input"
+        v-model="test_id" :items="test_prototype_ids" label="Select Test Prototype"/>
     <template v-for="tp in test_prototypes">
         <ViewTestPrototype  :tp="tp" v-if="test_id===tp.id"/>
     </template>

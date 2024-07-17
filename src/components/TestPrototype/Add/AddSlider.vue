@@ -9,15 +9,21 @@
         </div>
         <div class="j_user_area">
             <h2>What the user sees</h2>
-            <h2>{{ props.my.label }}</h2>
-            <span>{{ props.my.min }}</span>
-            <v-slider
-            thumb-label="always"
-            :min="props.my.min"
-            :max="props.my.max"
-            />
-            <span>{{ props.my.max }}</span>
-            <v-btn :disabled="true">Continue</v-btn>
+            <div class="j_phone_sim">
+                <h2>{{ props.my.label }}</h2>
+                <v-slider
+                thumb-label="always"
+                :min="props.my.min"
+                :max="props.my.max"
+                style="
+                    width: 80%;
+                    margin-top:100px;
+                "
+                :show-ticks="'always'"
+                :step="1"
+                />
+                <v-btn :disabled="true" class="j_continue_button">Continue</v-btn>
+            </div>
         </div>
     </div>
 </template>

@@ -10,7 +10,7 @@
             <div class="j_divider"/>
             <div style="overflow-y: scroll; max-height: 50vh;">
                 <template v-for="(item, idx) in props.items">
-                        <div
+                        <div v-if="!props.fixed_order"
                             :class="{
                                 j_list_gap: idx!==active_gap,
                                 j_expand_gap: idx===active_gap
@@ -20,18 +20,34 @@
                             @dragover="gap_dragover($event)"
                             @drop="header_drop($event, idx)"
                         />
-                        <v-btn
-                            size="medium"
+                        <button
+                            v-if="!props.fixed_order"
                             draggable="true"
-                            :class="{j_list_header:true, j_viewing:item.id===active_item, j_grabbable:true}"
+                            :class="['button-7', 'j_list_header', 'j_grabbable',{
+                                j_viewing:item.__jlist_id===active_item,
+                                j_list_special:props.is_special(item)
+                                }]"
                             @dragstart="header_dragstart($event, idx)"
                             @dragend="header_dragend($event)"
-                            @click="header_click(item.id)"
+                            @click="header_click(item.__jlist_id!)"
                             >
-                            <span>{{item.id}}</span>
-                        </v-btn>
+                            <input type="text" v-model="item.id" v-if="typeof(item.id)==='string'" style="color:white;"/>
+                            <span v-else style="color:white;">{{idx + 1}}</span>
+                        </button>
+                        <button v-else
+                            :class="['button-7', 'j_list_header',{
+                                j_viewing:item.__jlist_id===active_item,
+                                j_list_special:props.is_special(item)
+                            }]"
+                            @click="header_click(item.__jlist_id!)"
+                            size="medium">
+                            <input type="text" v-model="item.id" v-if="typeof(item.id)==='string'" style="color:white;"/>
+                            <span v-else style="color:white;">{{idx + 1}}</span>
+                        </button>
+
                 </template>
                 <div
+                    v-if="!props.fixed_order"
                     :class="{
                             j_list_gap: -1!==active_gap, 
                             j_expand_gap: -1===active_gap, 
@@ -47,28 +63,49 @@
                 <slot name="postamble"/>
             </div>
         </div>
-        <div  v-for="item in props.items"
-            :class="{j_active_item:item.id===active_item,j_passive_item: item.id!==active_item}">
-            <slot name="renderer" :item="item"/>
+        <div  v-for="item, idx in props.items"
+            :class="{j_active_item:item.__jlist_id===active_item,j_passive_item: item.__jlist_id!==active_item}">
+            <slot name="renderer" :item="item" :idx="idx"/>
         </div>
     </div>
 </template>
-<script lang="ts" setup generic="T extends {id: string}">
-import {getCurrentInstance, ref, type Ref} from 'vue'
+<script lang="ts" setup generic="T extends {id?: string, __jlist_id?:number}">
+import {ref, type Ref} from 'vue'
 
 
 interface Props<T>{
-    items: T[]
-    mime_methods?: Map<string, (f:File, idx:number)=>void> 
+    items: T[],
+    mime_methods?: Map<string, (f:File, idx:number)=>void>,
+    fixed_order?: boolean
+    is_special?: (a:T)=>boolean
 }
-
+const id_creator = function*(){
+    let i = 0
+    while (true){
+        yield i
+        i += 1
+    }
+}()
 const props = withDefaults(defineProps<Props<T>>(),
     // @ts-expect-error
-    {mime_methods: new Map()}
+    {mime_methods: new Map(), fixed_order: false, is_special:((_)=>false)}
 )
 
+function add_jlist_id(item:T){
+    Object.defineProperty(item, '__jlist_id', {value: id_creator.next().value!, writable:true, enumerable:false})
+}
 
-const active_item = ref("")
+
+props.items.forEach(i=>add_jlist_id(i))
+
+props.items.push = function(...items:T[]){
+    items.forEach(i=>add_jlist_id(i))
+    return Array.prototype.push.apply(this, items)
+}
+
+
+
+const active_item = ref(0)
 const active_file: Ref<File|null> = ref(null)
 
 function mime_accepted(e:DragEvent):('copy'|'move'|''){
@@ -91,8 +128,8 @@ function mime_accepted(e:DragEvent):('copy'|'move'|''){
     return ''
 }
 
-function header_click(s:string){
-    active_item.value=s
+function header_click(__jlist_id:number){
+    active_item.value=__jlist_id
 }
 
 const active_gap: Ref<number|null> = ref(null)

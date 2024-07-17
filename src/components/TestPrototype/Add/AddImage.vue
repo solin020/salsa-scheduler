@@ -1,15 +1,27 @@
 <template>
     <div class="j_mediadisplay">
         <div class="j_mediainput">
-            <div v-if="!props.my.hide_early">Move on from image automatically after a certain number of seconds?<input type="checkbox" v-model="props.my.autoadvance"/></div>
-            <div v-if="!props.my.autoadvance">Prevent participant from moving on past image for a certain number of seconds?<input type="checkbox" v-model="props.my.hide_early"/></div>
-            <div v-if="props.my.autoadvance || props.my.hide_early">Image display duration: <input type="number" v-model="props.my.duration"/> seconds</div>
+            <h3>{{ my.id }}</h3>
+            <div>
+                <input type="checkbox" v-model="props.my.autoadvance"
+                    :disabled="props.my.hide_early"
+                />Move on from image automatically after a certain number of seconds?
+            </div>
+            <div v-if="!props.my.autoadvance">
+                <input type="checkbox" v-model="props.my.hide_early"
+                    :disabled="props.my.autoadvance"
+                />Prevent participant from moving on past image for a certain number of seconds?
+            </div>
+            <div>
+                <input type="number" v-model="props.my.duration"
+                :disabled="!(props.my.autoadvance || props.my.hide_early)"
+                /> Image display duration (seconds)</div>
         </div>
         Select image: <input type="file" 
             accept="image/jpeg,image/png"
             @change="(e) => props.my.file = [(e.target! as HTMLInputElement).files![0]]" />
         <div class="j_media">
-            <img :src="imagesrc"/>
+            <div class="j_phone_sim"><img :src="imagesrc" style="width:90%;"/></div>
         </div>
 
     </div>

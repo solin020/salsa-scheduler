@@ -3,15 +3,51 @@
         <v-card-title>
             <span v-if="!toggleable">Test time of day </span>
             <!--@vue-ignore-->
-            <v-btn v-if="toggleable" @click="props.my.timing = {type:'fixed',hour:9,minute:0}">
-                Specify default  timing for  {{ name }}?
+            <v-btn v-if="toggleable && ! props.my.timing" @click="props.my.timing = {type:'fixed',hour:9,minute:0}">
+                Add default timing
             </v-btn>
             <!--@vue-ignore-->
-            <v-btn  v-if="toggleable" @click="props.my.timing=undefined">
-                Remove default timing for {{ name }}?
+            <v-btn  v-if="toggleable && props.my.timing" @click="props.my.timing=undefined">
+                Remove timing
             </v-btn>
         </v-card-title>
         <v-card-text v-if="props.my.timing">
+            <span class="j-tooltip">
+                ⓘ
+                <v-tooltip activator="parent" location="top">
+                    <p>There are several ways to specify what time of day the participant recieves their test prototype and reminder SMS at.</p>
+                    <ul>
+                        <li>
+                            <p>With the <em>Specific time</em> option, you may specify exactly what time of day the prototype becomes available.</p>
+                        </li>
+                        <li>
+                            <p>
+                               With the <em>Variable random time selection</em> option, you can have it instead be
+                               a random selection within a time range. 
+                            </p>
+                               <p>The randomization is different across all participants.</p>
+                            <p>
+                               For example, one patient might recieve their test prototypes at 9:30 AM,
+                               6:12 PM, and 3:15 PM, whereas another recieves it at 10:14 AM, 12:21 PM,
+                               and 4:32 PM.
+                            </p>
+                        </li>
+                        <li>
+                            <p>
+                                Instead, with the <em>Fixed random time selection</em> option, you can create a random
+                                selection which is shared across all participants. 
+                            </p>
+                            <p>
+                              For example, each patient across a schedule would their test prototypes at the same
+                              random times of 9:30 AM, 6:12 PM, and 3:15 PM.                   
+                            </p>
+                        </li>
+                        <li>
+                            <p>With the <em>Inherit</em> option, the timing selection from the containing phase or schedule is copied.</p>
+                        </li>
+                    </ul>
+                </v-tooltip>
+            </span>
             <v-select :items="[...(props.level!=='base'?[{
                 title:'Inherit',
                 value:'inherit'
@@ -19,10 +55,10 @@
                 title:'Specific time',
                 value:'fixed'
             },{
-                title:'Random time per patient',
+                title:'Variable random time selection',
                 value:'per-patient'
             },{
-                title:'Random time across schedule',
+                title:'Fixed random time selection',
                 value:'same-across-patients'
             }]" v-model="props.my.timing.type" :rules="[validate]"/>
             <template v-if="props.my.timing.type==='fixed'">
