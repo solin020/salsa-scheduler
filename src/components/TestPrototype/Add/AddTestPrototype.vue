@@ -353,6 +353,7 @@ async function submit_test_prototype(){
             json_obj.push(s)
         }
     }
+    console.log('json_obj', json_obj)
     fdata.append('metadata.json', JSON.stringify(json_obj))
 
     const response = fetch('/salsa/server/add-test-prototype?' + new URLSearchParams({

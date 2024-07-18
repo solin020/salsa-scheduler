@@ -181,8 +181,8 @@ async def save_test_prototype(project:str, id_:str, metadata_json:str, infiles: 
         print('saving filename')
         async with aiofiles.open(fpath, 'wb+') as f:
             await f.write(await infile.read()) 
-        async with aiofiles.open(os.path.join(true_path, 'metadata.json'), 'w+') as f:
-            await f.write(metadata_json) 
+    async with aiofiles.open(os.path.join(true_path, 'metadata.json'), 'w+') as f:
+        await f.write(metadata_json) 
     command = f'''zip -r {true_zip} {true_path} '''
     await (await asyncio.create_subprocess_shell(command)).wait()
     os.chdir(cwd)

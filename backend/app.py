@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, Response, Depends, UploadFile
-from starlette.responses import FileResponse , StreamingResponse
+from starlette.responses import FileResponse , StreamingResponse, PlainTextResponse
 from fastapi.responses import JSONResponse
 from starlette.staticfiles import StaticFiles
 from starlette.background import BackgroundTask
@@ -12,7 +12,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select, text
 from datetime import datetime, timezone, timedelta
 from uuid import uuid4
-import re, aiofiles, os, aiofiles.os, phonenumbers
+import re, aiofiles, os, aiofiles.os, phonenumbers, asyncio
 from config import (frontend_directory,
     account_sid, auth_token, twilio_number)
 from dataclasses import dataclass
@@ -578,9 +578,22 @@ def check_valid_project(s):
 
 
 
-@app.get("/salsa/server/public.pgp",)
-async def read_public_key():
-    return FileResponse(os.path.join(frontend_directory, 'public/public.pgp'))
+@app.get("/salsa/device/get-public-key",)
+async def read_public_key(r:Request, db:AsyncSession=Depends(get_db)):
+    subject_id = r.headers['salsaid']
+    if (participant := (await db.exec(
+        select(Participant).where(Participant.id==subject_id)
+      )).one_or_none()):
+        command = '''gpg --armor --export salsa@uw.edu'''
+        proc = await asyncio.create_subprocess_shell(
+            command,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE 
+        )
+        key, stderr = await proc.communicate()
+        return PlainTextResponse(key.strip())
+    return Response('Invalid response code', status_code=406)
+
 
 
 @app.get("/salsa/server/coordinator.html",)

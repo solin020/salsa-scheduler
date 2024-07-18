@@ -61,6 +61,8 @@
                             v-model="my.default_selection.test_prototype_id"
                         />
                     </template>
+                    <br/>
+                    Allow participant to choose their own test? <input type="checkbox" v-model="my.test_mode"/>
                 </v-card-text>
             </v-card>
         </template>

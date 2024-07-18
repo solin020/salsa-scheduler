@@ -153,6 +153,7 @@ export type SchedulePrototype<Location extends ScheduleLocation> = {
     default_results: Location extends ("result") ? Result[] : undefined
     default_selection?: TestPrototypeChoice<'device','entry'>
     twilio_info: Location extends ("database"|"website") ? string : undefined
+    test_mode?: boolean
     phases: 
     {
         id:string

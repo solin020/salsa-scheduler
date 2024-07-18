@@ -241,10 +241,12 @@ export function prepare_schedule_for_participant(
         prototype_selection:undefined,
         default_selection:ws.default_selection,
         timing:undefined,
+        test_mode:ws.test_mode,
         phases: ws.phases.map(
             p => {
                 const phase_prototype_generator = p.prototype_selection ? 
                     get_test_prototype_generator(p.prototype_selection, tp) :
+ 
                     base_prototype_generator
                 const phase_timing_generator = p.spec.timing ? 
                     get_timing_generator(p.spec.timing) :
