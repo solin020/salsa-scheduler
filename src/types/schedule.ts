@@ -1,4 +1,3 @@
-import { type TwilioInfo } from "."
 export enum Quality {
     FUTURE=0,
     COMPLETE=1,
@@ -132,7 +131,7 @@ export type PhaseSpec<Location extends ScheduleLocation> = Location extends ("we
     tests:{
         formal_timestamp: string
         real_timestamp: Location extends "result" ? Date : undefined
-        response_stimuli: string[]
+        response_stimuli: ResponseStimulus[]
         sequence_no: number
         prototype_selection:TestPrototypeChoice<Location, 'entry'>
         results: Location extends "result" ? Result[] : undefined
@@ -169,3 +168,37 @@ export type Timezone = (
     'America/Chicago'|'America/New_York'|'America/Puerto_Rico'|'Pacific/Samoa'
 )
 
+export type DashboardByParticipantsData = {
+    "n-registered-participants": number
+    "n-completed-visits": number
+    participants: {
+        pid: string
+        task_id: string
+        task_name: string
+        task_data: {[key:string]:number[]}
+    }[]
+}
+export type ResponseStimulus = {
+    id:string,
+    type:'recording'|'ema'
+}
+
+export type StimulusResult<T extends 'parsed'|'unparsed'> = {
+    project: string
+    participant_id: string
+    real_timestamp?: T extends 'parsed'? Date : string
+    miscellaneous?: any
+    test_prototype_id: string
+    schedule_id?: string
+    stimulus_id: string
+    sequence_no: number
+    formal_timestamp?: T extends 'parsed'? Date : string
+    schedule_prototype_id: string
+    quality: number
+}
+export type Visit = {
+    phase: string | -1
+    results: StimulusResult<'parsed'>[]
+    quality?: 0|1|2|3|100
+    sequence_no:number
+}

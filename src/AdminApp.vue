@@ -7,7 +7,7 @@
             <j-tabs :tabnames="['admins', 'coordinators']">
                 <template #header_admins> View admins </template>
                 <template #content_admins>
-                    <j-list :items="admins">
+                    <j-list :items="admins" :fixed_order="true" :uneditable="true">
                         <template #preamble>
                             <h2>Admins::</h2>
                         </template>
@@ -34,7 +34,7 @@
                 </template>
                 <template #header_coordinators> View coordinators </template>
                 <template #content_coordinators>
-                    <j-list :items="coordinators">
+                    <j-list :items="coordinators" :fixed_order="true" :uneditable="true">
                         <template #preamble>
                             View Existing Coordinators (click to edit):
                         </template>

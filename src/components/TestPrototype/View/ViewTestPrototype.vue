@@ -8,7 +8,7 @@
             <div v-else>
                 <div>
                     <v-card>
-                        <v-card-title>Info</v-card-title>
+                        <v-card-title>Groups:</v-card-title>
                         <v-card-text>
                             <v-list>
                                 <v-list-item v-for="g in props.tp.groups">{{g}}</v-list-item>
@@ -84,6 +84,7 @@ DefaultService.getTestPrototypeFilesSalsaServerGetTestPrototypeFilesGet(props.tp
             })).toString())
         )
         const metadatapath = full_pathlist.filter(s => s.endsWith('metadata.json'))[0]
+
         fetch(metadatapath).then( r=> r.json()).then( s=>{
             let tp: TestPrototypeType = s
             let filecount = 0
@@ -102,6 +103,10 @@ DefaultService.getTestPrototypeFilesSalsaServerGetTestPrototypeFilesGet(props.tp
                         }
                     })
                 }
+            }
+            //if the test prototype has no media (for example if there is only an ema questionnaire)
+            if (full_pathlist.length === 1){
+                my.value = tp
             }
         })
     }

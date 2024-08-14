@@ -17,7 +17,7 @@
                 :tz="participant_timezone"/>
             <v-select
                 style="width: 30vw;"
-                label="schedule prototype id" :items="schedule_prototype_ids" v-model="schedule_prototype_id"/>
+                label="Longitudinal study id" :items="schedule_prototype_ids" v-model="schedule_prototype_id"/>
         </template>
         <template #header_schedule>
             Preview schedule and deploy participant

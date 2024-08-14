@@ -81,8 +81,9 @@ export type TestPrototype = {
 export type TestPrototypeMeta = {
     id: string
     groups: string[]
-    response_stimuli: string[]
-    randomized: boolean
+    response_stimuli: {id:string, type:'recording'|'ema'}[]
+    randomized: boolean,
+    stimulus_ids: string[]
 }
 
 export type Textbox = {
@@ -118,3 +119,24 @@ export type TwilioInfo = {
     nickname:string
 }
 
+export type Transcript = {
+    language: string
+    segments:{
+        start:number
+        end:number
+        text:string
+        words:{
+            start:number
+            end:number
+            score:number
+            word:string
+        }[]
+
+    }[]
+    word_segments:{
+        start:number
+        end:number
+        score:number
+        word:string
+    }[]
+}

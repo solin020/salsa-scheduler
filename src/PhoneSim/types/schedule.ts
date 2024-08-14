@@ -132,7 +132,7 @@ export type PhaseSpec<Location extends ScheduleLocation> = Location extends ("we
     tests:{
         formal_timestamp: string
         real_timestamp: Location extends "result" ? Date : undefined
-        response_stimuli: string[]
+        response_stimuli: {id:string, type:'recording'|'ema'}[]
         sequence_no: number
         prototype_selection:TestPrototypeChoice<Location, 'entry'>
         results: Location extends "result" ? Result[] : undefined

@@ -131,14 +131,14 @@ async def save_message_response_nozip(project: str,
     os.chdir(cwd)
 
 
-def get_message_response_dir_path(project, schedule_id):
+def get_visit_dir_path(project, schedule_id):
     return os.path.join(message_response_directory, project, schedule_id)
 
-def get_message_response_file_path(project, schedule_id, filename):
+def get_visit_file_path(project, schedule_id, filename):
     return os.path.join(message_response_directory, project, schedule_id, filename)
 
 async def delete_message_response(project, schedule_id):
-    await aiofiles.os.rmdir(get_message_response_dir_path(project, schedule_id))
+    await aiofiles.os.rmdir(get_visit_dir_path(project, schedule_id))
  
 
 
@@ -243,7 +243,8 @@ def convert_to_scription(transcription: dict, name:str):
         },
     }
 
-async def make_file_zip(files:tuple[str,str])->bytes:
+async def make_file_zip(files:list[str])->bytes:
+    print('files!', files)
     cwd = os.getcwd()
     id = str(uuid4())
     download_directory = os.path.join(message_response_directory, id)

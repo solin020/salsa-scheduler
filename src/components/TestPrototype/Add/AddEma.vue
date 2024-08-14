@@ -63,7 +63,26 @@
             <br/>
             <span>
                 <v-select v-model="questiontype" label="Question type" :items="[
-                    'textbox', 'slider', 'single-choice-radio', 'single-choice-dropdown', 'multiple-choice-checkbox'
+                    {
+                        value: 'textbox',
+                        title: 'Textbox'
+                    }, 
+                    {
+                        value: 'slider',
+                        title: 'Number slider'
+                    }, 
+                    {
+                        value: 'single-choice-radio',
+                        title: 'Multiple Choice Single Answer'
+                    }, 
+                    {
+                        value: 'single-choice-dropdown',
+                        title: 'Dropdown Menu'
+                    }, 
+                    {
+                        value: 'multiple-choice-checkbox',
+                        title: 'Multiple Choice Multiple Answer'
+                    }
                     ]"
                     />
 

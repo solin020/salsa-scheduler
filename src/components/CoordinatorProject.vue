@@ -7,24 +7,16 @@
             'scheduledesigner',
             'twilioinfo']">
         <template #header_dashboard> View participant dashboard</template>
-        <template #content_dashboard> <Popup>
-            <template #open>
-                Open dashboard
-            </template>
-            <template #content>
-                <iframe style="width:100vw; height:95vh;" :src="`/salsa/server/dashboard/dashboard.html?timestamp=${(new Date()).getTime()}`"></iframe>
-            </template>
-            <template #close>
-                Return to homepage
-            </template>
-        </Popup></template>
+        <template #content_dashboard> 
+            <Dashboard/>
+        </template>
         <template #header_addparticipant> Add a new participant</template>
         <template #content_addparticipant>  <add-participant/></template>
         <template #header_addtestprototype> Add a new test prototype </template>
         <template #content_addtestprototype> <AddTestPrototype/> </template>
         <template #header_viewtestprototypes> View test prototypes </template>
         <template #content_viewtestprototypes><ViewTestPrototypes/></template>
-        <template #header_scheduledesigner>Schedule Designer</template>
+        <template #header_scheduledesigner>Longitudinal Study Designer</template>
         <template #content_scheduledesigner><ScheduleDesigner/></template>
         <template #header_twilioinfo>Configure Twilio</template>
         <template #content_twilioinfo><Twilio/></template>
@@ -37,7 +29,7 @@ import ScheduleDesigner from './ScheduleDesigner/ScheduleDesigner.vue'
 import AddParticipant from './AddParticipant.vue'
 import Twilio from './Twilio.vue'
 import JTabs from '@/components/JTabs.vue'
-import JBtn from  '@/components/JBtn.vue'
+import Dashboard from  '@/components/Dashboard/Dashboard.vue'
 import {DefaultService, type Participant as ParticipantType} from '../client'
 import {ref, type Ref, provide} from 'vue'
 import { reload_participants_key, project_key, 
@@ -46,7 +38,6 @@ import { reload_participants_key, project_key,
     schedule_prototype_list_key, reload_schedule_prototypes_key } from '@/injectkeys'
 import { type TestPrototypeMeta, type TwilioInfo} from '@/types'
 import type { SchedulePrototype } from '@/types/schedule'
-import Popup from './Popup.vue'
 
 interface Props{
     projectname: string

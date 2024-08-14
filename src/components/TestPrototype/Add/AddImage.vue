@@ -16,10 +16,11 @@
                 <input type="number" v-model="props.my.duration"
                 :disabled="!(props.my.autoadvance || props.my.hide_early)"
                 /> Image display duration (seconds)</div>
-        </div>
-        Select image: <input type="file" 
+            Select image: <input type="file" 
             accept="image/jpeg,image/png"
             @change="(e) => props.my.file = [(e.target! as HTMLInputElement).files![0]]" />
+            <br/>
+        </div>
         <div class="j_media">
             <div class="j_phone_sim"><img :src="imagesrc" style="width:90%;"/></div>
         </div>

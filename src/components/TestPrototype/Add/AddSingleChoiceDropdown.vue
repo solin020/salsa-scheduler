@@ -3,7 +3,7 @@
         <div class="j_edit_area">
             <h2>Editing Question {{ props.my.id }}</h2>
             <div class="j_divider"/>
-            <v-text-field type="text" v-model="props.my.label" label="User visible label for question"/>
+            <v-text-field type="text" v-model="props.my.label" label="User visible prompt"/>
             <v-text-field type="text" v-model="option" label="Write a new choice for an answer"/>
             <v-btn @click="add_option(option)">Add a new choice</v-btn>
         </div>

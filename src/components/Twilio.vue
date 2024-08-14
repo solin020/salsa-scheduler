@@ -1,6 +1,11 @@
 <template>
     <br/>
-    <v-container style="width: 100 vw;">
+    <v-container style="width: 100 vw;" class="bg-surface-variant">
+        <v-row>
+            <v-col :cols="12" :lg="12">
+                <span style="font-size:24pt;">Add a new Twilio configuration</span>
+            </v-col>
+        </v-row>
         <v-row no-gutters>
             <v-col :cols="12" :lg="2">
                 <v-text-field label="Config nickname" v-model="new_tw_nickname"/>
@@ -18,18 +23,18 @@
             </v-col>
         </v-row>
         <v-row>
-            <v-col :ciks="12" :lg="6">
-                <j-btn :click="upload_new" :arg0="undefined">Save new Twilio configuration</j-btn>
+            <v-col :cols="12" :lg="6">
+                <j-btn :click="upload_new" :arg0="undefined" style="color:black;">Save new Twilio configuration</j-btn>
+            </v-col>
+        </v-row>
+        <v-row>
+            <v-col :cols="12" :lg="12">
+                <span style="font-size:24pt;">View and edit saved Twilio configurations</span>
             </v-col>
         </v-row>
         <v-row v-for = "tw, idx in twilio_infos" no-gutters>
             <v-col :cols="12" :lg="2">
-                <template v-if="active_idx===idx">
-                    <v-text-field label="Twilio information nickname" v-model="tw.nickname"/>
-                </template>
-                <template v-else>
-                    {{tw.nickname}}
-                </template>
+                Nickname:  {{tw.nickname}}
             </v-col>
             <v-col :cols="12" :lg="2">
                 <template v-if="active_idx===idx">
@@ -56,14 +61,14 @@
                 </template>
             </v-col>
             <v-col :cols="12" :lg="2" v-if="active_idx===idx">
-                <j-btn :click="upload_existing" :arg0="tw">Update Twilio configuration</j-btn>
+                <j-btn :click="upload_existing" :arg0="tw" style="color:black;">Update Twilio configuration</j-btn>
             </v-col>
             <v-col :cols="12" :lg="2">
                 <template v-if="active_idx===idx">
-                    <v-btn @click="active_idx=undefined">Undo</v-btn>
+                    <v-btn @click="active_idx=undefined" style="color:black;">Undo</v-btn>
                 </template>
                 <template v-else>
-                    <v-btn @click="active_idx=idx">Edit?</v-btn>
+                    <v-btn @click="active_idx=idx" style="color:black;">Edit?</v-btn>
                 </template>
             </v-col>
         </v-row>

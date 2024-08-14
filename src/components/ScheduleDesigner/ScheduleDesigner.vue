@@ -12,7 +12,7 @@
                     <v-form>
                         <v-text-field
                             style="width: 30vw;"
-                            density="compact" v-model="my.schedule_id" label="Enter schedule prototype name"/>
+                            density="compact" v-model="my.schedule_id" label="Enter Longitudinal study name"/>
                         <v-select
                             style="width: 30vw;"
                         density="compact" :items="[twilio_nicknames]" label="Select twilio config nickname" v-model="my.twilio_info"/>

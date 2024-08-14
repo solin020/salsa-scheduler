@@ -3,7 +3,7 @@
         <div class="j_edit_area">
             <h2>Editing Question {{ props.my.id }}</h2>
             <div class="j_divider"/>
-            <v-text-field v-model="props.my.label" label="User visible label"/>
+            <v-text-field v-model="props.my.label" label="User visible prompt"/>
             <v-text-field v-model="props.my.min" label="Minimum slider value"/>
             <v-text-field v-model="props.my.max" label="Maximum slider value"/>
         </div>

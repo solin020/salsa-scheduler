@@ -33,25 +33,35 @@
     }
 }
 .j-crumbadvance{
-  position: absolute;
+  clear: both;
   bottom: 0px;
   margin-right: auto;
   margin-left: auto;
   width: 150pt;
   left: 0px;
   right: 0px;
+
+
+}
+
+.j-crumbbutton{
+  &:enabled{
+    background-image: var(--salsablue);
+    color: white;
+  }
+  &:disabled{
+    background-color: lightgrey;
+    color: darkgrey;
+  }
 }
 
 
 
 .button-7 {
-  background-color: lightgray;
-  color: rgb(85, 84, 84);
   border: 1px solid transparent;
   border-radius: 3px;
   box-shadow: rgba(255, 255, 255, .4) 0 1px 0 0 inset;
   box-sizing: border-box;
-  color: #fff;
   font-family: -apple-system,system-ui,"Segoe UI","Liberation Sans",sans-serif;
   font-size: 20pt;
   font-weight: 400;
@@ -68,9 +78,7 @@
   vertical-align: baseline;
   white-space: nowrap;
   &:enabled{
-    background-image: var(--salsablue);
     box-shadow: none;
-    color:white;
     cursor: pointer;
     &:hover{
       box-shadow: 0 0 0 4px rgba(0, 149, 255, .15);
@@ -94,4 +102,9 @@ input[type=number], input[type=checkbox], input[type=radio]{
   border-radius: 30px;
   background-color: white;
   padding: 30px;
+}
+
+.j-generic-popup{
+  height: 600px;
+  width: 600px;
 }

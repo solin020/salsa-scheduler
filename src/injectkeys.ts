@@ -4,7 +4,7 @@ import {type Participant as ParticipantType,
         type MessageResponse as MessageResponseType,
 } from '@/client'
 import { type TestPrototypeMeta, type TwilioInfo } from './types'
-import { type SchedulePrototype } from './types/schedule'
+import type {  SchedulePrototype, ResponseStimulus } from './types/schedule'
 
 export const participant_list_key = Symbol() as InjectionKey<Ref<ParticipantType[]>>
 export const participant_key = Symbol() as InjectionKey<ParticipantType>
@@ -26,4 +26,6 @@ export const reload_schedule_prototypes_key = Symbol() as InjectionKey<Function>
 export const coordinator_id_key = Symbol() as InjectionKey<string>
 export const sim_test_prototype_id_key = Symbol() as InjectionKey<string>
 export const pinia_key = Symbol() as InjectionKey<any>
+export const response_stimuli_key = Symbol() as InjectionKey<Ref<Map<string, ResponseStimulus>>>
+export const close_all_key = Symbol() as InjectionKey<Ref<boolean>>
 

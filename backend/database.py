@@ -10,6 +10,8 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlalchemy.orm import sessionmaker
 from config import db_username, db_password, db_host, db_name
 
+           
+    
 
 
 
@@ -95,6 +97,21 @@ class SchedulePrototype(SQLModel, table=True):
 @dataclass
 class StimulusResult(SQLModel, table=True):
     __tablename__ = "stimulus_result"
+    project: str
+    schedule_id: str 
+    participant_id: str = Field(primary_key=True)
+    formal_timestamp: datetime = Field(sa_column=Column(sqlalchemy.types.DateTime(timezone=True)))
+    real_timestamp: datetime = Field(sa_column=Column(sqlalchemy.types.DateTime(timezone=True)))
+    miscellaneous: dict = Field(sa_column=Column(JSON), default={})
+    test_prototype_id: str = Field(primary_key=True)
+    stimulus_id: str = Field(primary_key=True)
+    sequence_no: int = Field(primary_key=True)
+    quality: str
+    schedule_prototype_id: str
+
+@dataclass
+class VisitResult(SQLModel, table=True):
+    __tablename__ = "visit_result"
     project: str
     schedule_id: str 
     participant_id: str = Field(primary_key=True)

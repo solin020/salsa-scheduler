@@ -20,12 +20,12 @@
       <div class="j-crumbadvance">
         <button 
           @click="precedetabs" 
-          class="button-7" 
+          class="button-7 j-crumbbutton" 
           :disabled="i==0" 
           v-if="active_tab==tabname">&lt;</button>
         <button 
           @click="advancetabs" 
-          class="button-7"  
+          class="button-7 j-crumbbutton"  
           :disabled="!(enableds[i].value) || i == (props.tabnames.length-1)" 
           v-if="active_tab==tabname">&gt;</button>
       </div>

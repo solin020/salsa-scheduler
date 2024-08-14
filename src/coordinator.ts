@@ -11,8 +11,9 @@ import VCalendar from 'v-calendar'
 
 
 
+
 const vuetify = createVuetify({
   components,
-  directives
+  directives,
 })
 createApp(App).use(vuetify).use(VCalendar).mount('#app')

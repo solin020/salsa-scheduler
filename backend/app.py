@@ -6,7 +6,7 @@ from starlette.background import BackgroundTask
 from twilio.rest import Client
 from database import (Admin, Coordinator, Annotator, Participant, 
     MessageSchedule, StimulusResult, TestPrototype, Transcription,
-    get_db, update_users, SchedulePrototype, AllGroups,
+    get_db, update_users, SchedulePrototype, AllGroups, VisitResult,
     TwilioInfo)
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select, text
@@ -20,7 +20,7 @@ import dataclasses
 import datetime as DateTime
 import json
 from upload_files import (save_message_response, save_message_response_nozip,save_annotation,save_test_prototype,
-    get_annotation_path,get_message_response_dir_path,get_message_response_file_path,
+    get_annotation_path, get_visit_dir_path, get_visit_file_path,
     get_test_prototype_dir_path,get_test_prototype_file_path,get_test_prototype_zip_path,
     delete_annotation,delete_message_response,delete_test_prototype,
     make_file_zip)
@@ -33,14 +33,14 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_credentials=True,  
+    allow_methods=["*"],         
+    allow_headers=["*"], 
 )
 client = Client(account_sid, auth_token)
 
-
-
+                             
+                                                                                                
 
 
 
@@ -55,6 +55,8 @@ async def device_upload_response_file_nozip(r:Request, db:AsyncSession=Depends(g
     test_prototype_id = r.query_params['test_prototype_id']
     sequence_no = int(r.query_params['sequence_no'])
     real_timestamp = datetime.fromisoformat(r.query_params['timestamp'].replace('Z','+00:00'))
+    if len(schedule_id) < 1 or schedule_id=='null':
+        schedule_id = subject_id + test_prototype_id + r.query_params['timestamp'][:13]
     infiles = []
     names = []
     form = await r.form()
@@ -72,7 +74,16 @@ async def device_upload_response_file_nozip(r:Request, db:AsyncSession=Depends(g
             real_timestamp.isoformat(), participant.id, 
             infiles, names, db
         )
-        if sequence_no == -1:
+        if (mr := (await db.exec(select(StimulusResult)
+                .where(StimulusResult.test_prototype_id == test_prototype_id)
+                .where(StimulusResult.stimulus_id == stimulus_id)
+                .where(StimulusResult.participant_id == participant.id)
+                .where(StimulusResult.sequence_no == sequence_no)
+            )).one_or_none()):
+            mr.quality = '3'
+            mr.real_timestamp=real_timestamp
+            mr.schedule_id=schedule_id
+        else:
             mr = StimulusResult(
                 project=participant.projects[0],
                 schedule_id=schedule_id,
@@ -83,19 +94,9 @@ async def device_upload_response_file_nozip(r:Request, db:AsyncSession=Depends(g
                 sequence_no=sequence_no,
                 real_timestamp=real_timestamp,
                 formal_timestamp=None,
+                quality='3',
                 schedule_prototype_id=participant.schedule_prototype_id
             ) 
-        else:
-            print('inparams', test_prototype_id,stimulus_id, participant.id, sequence_no, flush=True)
-            mr = (await db.exec(select(StimulusResult)
-                .where(StimulusResult.test_prototype_id == test_prototype_id)
-                .where(StimulusResult.stimulus_id == stimulus_id)
-                .where(StimulusResult.participant_id == participant.id)
-                .where(StimulusResult.sequence_no == sequence_no)
-            )).one()
-            
-            mr.quality = '3'
-            mr.real_timestamp=real_timestamp
         db.add(mr)
         await db.commit()
         return Response('OK')
@@ -143,7 +144,8 @@ async def coordinator_upload_response_file(r:Request,  db:AsyncSession=Depends(g
         sequence_no=sequence_no,
         real_timestamp=real_timestamp,
         formal_timestamp=None,
-        schedule_prototype_id=None
+        schedule_prototype_id=None,
+        quality='3'
     ) 
     db.add(mr)
     await db.commit()
@@ -286,11 +288,14 @@ async def get_participant(project:str,db:AsyncSession=Depends(get_db)) -> list[P
 
 @app.get('/salsa/server/api/coordinator-get-projects')
 async def coordinator_get_projects(db:AsyncSession=Depends(get_db)) -> list[str]:
-    return (await db.exec(select(Coordinator))).one().projects
+    try:
+        return (await db.exec(select(Coordinator))).one().projects            
+    except:
+        return list(set(sum([p.projects for p in (await db.exec(select(Coordinator))).all()],[])))
 
 @app.get('/salsa/server/api/admin-get-projects')
 async def admin_get_projects(db:AsyncSession=Depends(get_db)) -> list[str]:
-    return sum([p.projects for p in (await db.exec(select(Coordinator))).all()],[])
+    return list(set(sum([p.projects for p in (await db.exec(select(Coordinator))).all()],[])))
 
 @app.get('/salsa/server/api/annotator-get-projects')
 async def annotator_get_projects(db:AsyncSession=Depends(get_db)) -> list[str]:
@@ -358,55 +363,109 @@ async def coordinator_get_messages(participant_id:str, db:AsyncSession=Depends(g
 
 
 
-@app.get('/salsa/server/get-project-message-response-files')
-async def get_message_response_files(project: str, db:AsyncSession=Depends(get_db)) -> Response:
+@app.get('/salsa/server/get-stimulus-file')
+async def get_message_response_files(project: str, schedule_id: str, stimulus_id:str, db:AsyncSession=Depends(get_db)) -> Response:
+    mr_directory = get_visit_dir_path(project, schedule_id)
+
+
+@app.get('/salsa/server/get-project-zip')
+async def get_project_zip(project: str, db:AsyncSession=Depends(get_db)) -> Response:
     mrs = (await db.exec(select(StimulusResult).where(StimulusResult.project==project))).all()
     fnames = set()
     for mr in mrs:
-        mr_directory = get_message_response_dir_path(mr.project, mr.schedule_id)
+        if not mr.schedule_id: continue
+        mr_directory = get_visit_dir_path(mr.project, mr.schedule_id)
         for filename in await aiofiles.os.listdir(mr_directory):
-            fnames.add((mr.schedule_id, get_message_response_file_path(mr.project, mr.schedule_id, filename)))
+            fnames.add((mr.schedule_id, get_visit_file_path(mr.project, mr.schedule_id, filename)))
     return StreamingResponse(
         content=await make_file_zip(list(fnames)), 
         headers={"Content-disposition":f'''attachment; filename="{project}.zip"'''},
         media_type="application/zip"
     )
 
+@app.get('/salsa/server/get-study-zip')
+async def get_study_zip(project: str, schedule_prototype_id:str, db:AsyncSession=Depends(get_db)) -> Response:
+    mrs = (await db.exec(
+        select(StimulusResult).where(
+                StimulusResult.project==project
+            ).where(
+                StimulusResult.schedule_prototype_id==schedule_prototype_id
+            ))).all()
+    fnames = set()
+    for mr in mrs:
+        if not mr.schedule_id: continue
+        mr_directory = get_visit_dir_path(mr.project, mr.schedule_id)
+        for filename in await aiofiles.os.listdir(mr_directory):
+            fnames.add((mr.schedule_id, get_visit_file_path(mr.project, mr.schedule_id, filename)))
+    return StreamingResponse(
+        content=await make_file_zip(list(fnames)), 
+        headers={"Content-disposition":f'''attachment; filename="{schedule_prototype_id}.zip"'''},
+        media_type="application/zip"
+    )
 
-@app.get('/salsa/server/get-participant-message-response-files')
-async def get_message_response_files(participant_id: str, db:AsyncSession=Depends(get_db)) -> Response:
+
+
+
+@app.get('/salsa/server/get-participant-zip')
+async def get_participant_zip(participant_id: str, db:AsyncSession=Depends(get_db)) -> Response:
     mrs = (await db.exec(select(StimulusResult).where(StimulusResult.participant_id==participant_id))).all()
     fnames = set()
     for mr in mrs:
-        mr_directory = get_message_response_dir_path(mr.project, mr.schedule_id)
+        if not mr.schedule_id: continue
+        mr_directory = get_visit_dir_path(mr.project, mr.schedule_id)
         for filename in await aiofiles.os.listdir(mr_directory):
-            fnames.add((mr.schedule_id, get_message_response_file_path(mr.project, mr.schedule_id, filename)))
-        return StreamingResponse(
+            fnames.add((mr.schedule_id, get_visit_file_path(mr.project, mr.schedule_id, filename)))
+    return StreamingResponse(
         content=await make_file_zip(list(fnames)), 
         headers={"Content-disposition":f'''attachment; filename="{participant_id}.zip"'''},
         media_type="application/zip"
     )
 
-@app.get('/salsa/server/get-message-response-files')
-async def get_message_response_files(schedule_id: str, db:AsyncSession=Depends(get_db)) -> list[str]:
+
+
+@app.get('/salsa/server/get-visit-zip')
+async def get_visit_zip(schedule_id: str, db:AsyncSession=Depends(get_db)) -> list[str]:
     mrs = (await db.exec(select(StimulusResult).where(StimulusResult.schedule_id==schedule_id))).all()
-    mr_directory = get_message_response_dir_path(mrs[0].project, mrs[0].schedule_id)
+    mr_directory = get_visit_dir_path(mrs[0].project, mrs[0].schedule_id)
+    fnames = set()
+    for mr in mrs:
+        for filename in await aiofiles.os.listdir(mr_directory):
+            fnames.add((mr.schedule_id, get_visit_file_path(mr.project, mr.schedule_id, filename)))
+    return StreamingResponse(
+        content=await make_file_zip(list(fnames)), 
+        headers={"Content-disposition":f'''attachment; filename="{schedule_id}.zip"'''},
+        media_type="application/zip"
+    )
+
+
+@app.get('/salsa/server/get-visit-files')
+async def get_visit_files(schedule_id: str, db:AsyncSession=Depends(get_db)) -> list[str]:
+    mrs = (await db.exec(select(StimulusResult).where(StimulusResult.schedule_id==schedule_id))).all()
+    mr_directory = get_visit_dir_path(mrs[0].project, mrs[0].schedule_id)
     retval = set()
     for mr in mrs:
         for filename in await aiofiles.os.listdir(mr_directory):
-            retval.add(get_message_response_file_path(mr.project, mr.schedule_id, filename))
+            retval.add(get_visit_file_path(mr.project, mr.schedule_id, filename))
     return list(retval)
 
-@app.get('/salsa/server/get-message-response-file')
-async def get_message_response_file(schedule_id: str, filepath:str, db:AsyncSession=Depends(get_db)):
+
+@app.get('/salsa/server/get-visit-file')
+async def get_visit_file(schedule_id: str, filepath:str, db:AsyncSession=Depends(get_db)):
     mrs = (await db.exec(select(StimulusResult).where(StimulusResult.schedule_id==schedule_id))).all()
-    mr_path = get_message_response_dir_path(mrs[0].project, mrs[0].schedule_id)
+    mr_path = get_visit_dir_path(mrs[0].project, mrs[0].schedule_id)
     if mr_path == os.path.dirname(filepath):
         return FileResponse(filepath)
 
-@app.get('/salsa/server/get-message-response-transcriptions')
-async def get_message_response_transcriptions(schedule_id:str, db:AsyncSession=Depends(get_db)) -> list[Transcription]:
-    return (await db.exec(select(Transcription).where(Transcription.schedule_id==schedule_id))).all()
+@app.get('/salsa/server/get-visit-transcriptions')
+async def get_visit_transcriptions(schedule_id:str, db:AsyncSession=Depends(get_db)):
+    return JSONResponse(list({ 'stimulus_id':t.stimulus_id, 
+                              'transcript':t.segments} 
+        for t in (
+                    await db.exec(select(Transcription).where(Transcription.schedule_id==schedule_id))
+                    ).all()
+                )
+    )
+     
     
 
 @app.get('/salsa/device/get-test-prototype')
@@ -461,18 +520,24 @@ async def coordinator_get_test_prototypes(project:str, db:AsyncSession=Depends(g
         async with aiofiles.open(get_test_prototype_file_path(tp.project, tp.id, 'metadata.json')) as f:
             metadata = json.loads(await f.read())
             response_stimuli = []
+            stimulus_ids = []
             print(metadata, flush=True)
             for m in metadata['stimuli']:
+                stimulus_ids.append(m['id'])
                 if m['type'] in ('recording', 'ema'):
-                    response_stimuli.append(m['id'])
+                    response_stimuli.append({'id':m['id'],'type': m['type']})
             retval.append({
                 'id':tp.id, 
                 'project':tp.project, 
                 'groups':tp.groups, 
                 'response_stimuli':response_stimuli,
-                'randomized': tp.randomized
+                'randomized': tp.randomized,
+                'stimulus_ids':stimulus_ids,
             })
     return retval
+
+
+
 
 
 @app.get('/salsa/server/get-test-prototype-files')
@@ -548,14 +613,19 @@ async def get_groups(project:str, db:AsyncSession=Depends(get_db))->list[str]:
 @app.get('/salsa/server/api/get-dashboard-data')
 async def get_dashboard_data(project:str, schedule_prototype_id:str, db:AsyncSession=Depends(get_db)):
     retval = []
-    for s in (await db.exec(select(StimulusResult)
-        .where(StimulusResult.project==project)
-        .where(StimulusResult.schedule_prototype_id==schedule_prototype_id)
+    for s in (await db.exec(select(VisitResult)
+        .where(VisitResult.project==project)
+        .where(VisitResult.schedule_prototype_id==schedule_prototype_id)
     )).all():
+        quality_int = 3
+        try:
+            quality_int = int(s.quality)
+        except:
+            pass
         retval.append({
             'participant_id': s.participant_id,
             'stimulus_id':s.stimulus_id,
-            'quality':int(s.quality),
+            'quality':quality_int,
             'sequence_no':s.sequence_no,
             'schedule_id':s.schedule_id,
             'test_prototype_id':s.test_prototype_id,
@@ -608,18 +678,17 @@ async def read_annotator():
 async def read_admin():
     return FileResponse(os.path.join(frontend_directory, 'dist/admin.html'))
 
+@app.get("/salsa/server/favicon.ico",)
+async def read_admin():
+    return FileResponse(os.path.join(frontend_directory, 'public/favicon.ico'))
+
 @app.get("/salsa/server/phonesim.html",)
 async def read_phonesim():
     return FileResponse(os.path.join(frontend_directory, 'dist/phonesim.html'))
 
 
-@app.get("/salsa/server/dashboard/dashboard.html",)
-async def read_phonesim():
-    return FileResponse(os.path.join(frontend_directory, '/app/salsa-dashboard/dist/dashboard.html'))
-
 
 
 app.mount("/salsa/server/assets", StaticFiles(directory=os.path.join(frontend_directory, 'dist/assets')), name="dist")
-app.mount("/salsa/server/dashboard/assets", StaticFiles(directory='/app/salsa-dashboard/dist/assets'), name="dist")
 
 #endregion 

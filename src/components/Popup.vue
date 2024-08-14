@@ -23,6 +23,7 @@ interface Props{
 }
 const props = defineProps<Props>()
 
+
 function close_dialog(){
     if (dialogref.value){
         dialog_open.value=false

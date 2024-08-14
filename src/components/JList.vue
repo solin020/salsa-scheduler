@@ -8,7 +8,7 @@
                 <slot name="preamble"/>
             </div>
             <div class="j_divider"/>
-            <div style="overflow-y: scroll; max-height: 50vh;">
+            <div style="overflow-y: scroll; max-height: 50vh;" ref="scrollref">
                 <template v-for="(item, idx) in props.items">
                         <div v-if="!props.fixed_order"
                             :class="{
@@ -25,23 +25,27 @@
                             draggable="true"
                             :class="['button-7', 'j_list_header', 'j_grabbable',{
                                 j_viewing:item.__jlist_id===active_item,
-                                j_list_special:props.is_special(item)
+                                j_list_special:props.is_special(item),
+                                j_list_normal:!props.is_special(item),
                                 }]"
                             @dragstart="header_dragstart($event, idx)"
                             @dragend="header_dragend($event)"
                             @click="header_click(item.__jlist_id!)"
                             >
-                            <input type="text" v-model="item.id" v-if="typeof(item.id)==='string'" style="color:white;"/>
+                            <input type="text" v-model="item.id" v-if="typeof(item.id)==='string' && !props.uneditable" style="color:white;"/>
+                            <span v-else-if="typeof(item.id)==='string' && props.uneditable" style="color:white;">{{item.id}}</span>
                             <span v-else style="color:white;">{{idx + 1}}</span>
                         </button>
                         <button v-else
                             :class="['button-7', 'j_list_header',{
                                 j_viewing:item.__jlist_id===active_item,
-                                j_list_special:props.is_special(item)
+                                j_list_special:props.is_special(item),
+                                j_list_normal:!props.is_special(item),
                             }]"
                             @click="header_click(item.__jlist_id!)"
                             size="medium">
-                            <input type="text" v-model="item.id" v-if="typeof(item.id)==='string'" style="color:white;"/>
+                            <input type="text" v-model="item.id" v-if="typeof(item.id)==='string' && !props.uneditable" style="color:white;"/>
+                            <span v-else-if="typeof(item.id)==='string' && props.uneditable" style="color:white;">{{item.id}}</span>
                             <span v-else style="color:white;">{{idx + 1}}</span>
                         </button>
 
@@ -78,6 +82,7 @@ interface Props<T>{
     mime_methods?: Map<string, (f:File, idx:number)=>void>,
     fixed_order?: boolean
     is_special?: (a:T)=>boolean
+    uneditable?: boolean
 }
 const id_creator = function*(){
     let i = 0
@@ -91,6 +96,8 @@ const props = withDefaults(defineProps<Props<T>>(),
     {mime_methods: new Map(), fixed_order: false, is_special:((_)=>false)}
 )
 
+const scrollref: Ref<HTMLElement|undefined> = ref()
+
 function add_jlist_id(item:T){
     Object.defineProperty(item, '__jlist_id', {value: id_creator.next().value!, writable:true, enumerable:false})
 }
@@ -100,6 +107,10 @@ props.items.forEach(i=>add_jlist_id(i))
 
 props.items.push = function(...items:T[]){
     items.forEach(i=>add_jlist_id(i))
+    setTimeout(()=>{
+        //this makes sure that once the list gets big enough users can see newly added items
+        scrollref.value!.scrollTop = scrollref.value!.scrollHeight
+    }, 100)
     return Array.prototype.push.apply(this, items)
 }
 
@@ -215,4 +226,74 @@ function header_drop(e:DragEvent, target_idx: number){
 
 
 </script>
-<style src="@/css/jlist.css"/>
+<style>
+.j_list_container{
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    grid-auto-rows: max-content
+}
+
+.j_active_item{
+    grid-row: 1 / -1;
+    grid-column-start: 2;
+    grid-column-end: 3;
+}
+.j_passive_item{
+    display: none;
+}
+.j_header_container {
+    grid-column-start: 1;
+    grid-column-end: 2;
+    border-right: 2px solid #3e648d;
+}
+.j_list_gap{
+    height: 2rem;
+    background-color:white;
+}
+.j_expand_gap{
+    height: 6rem;
+    transition: height 1s;
+    animation: j_blink 1.5s infinite;
+}
+@keyframes j_blink{
+  0% {
+    background: tan;
+  }
+  50%{
+    background: white;
+  }
+  100% {
+    background: tan;
+  }
+}
+.j_list_header{
+    min-height: 3rem;
+    width: 80%;
+    margin-left: 20px;
+    margin-right: 20px;
+    &.j_grabbable{
+        z-index:1;
+    }
+    &.j_grabbable:hover{
+        cursor:grab
+    }
+    &.j_grabbable::before{
+        content: '↕️';
+    }
+    &.j_viewing{
+        box-shadow: 0 0 0 4px rgba(1, 48, 82, 0.45);
+        border-color: black;
+        border-style:inset;
+        border-width:8px;
+        &:hover{
+            cursor:pointer;
+        }
+    }
+    &.j_list_normal{
+        background-image:var(--salsablue);
+    }
+    &.j_list_special{
+        background-color:darkgreen;
+    }
+}
+</style>
