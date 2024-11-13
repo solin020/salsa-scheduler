@@ -26,11 +26,25 @@
         <div v-if="show_max_duration"> <input 
             type="number" v-model="props.my.max_duration"
             /> Recording max duration (seconds)</div>
+        <div>
+            <v-text-field label="Message to display" v-model="props.my.message"/>
+        </div>
     </div>
     <div class="j_divider"/>
     <h2>Recording</h2>
     <div class="j_phone_sim">
         <v-btn :disabled="true">Start Recording 🎙️</v-btn>
+        <p v-if="props.my.message">
+        {{ props.my.message }}
+        </p>
+        <template v-if="props.my.duration! > 0">
+            <p v-if="props.my.autoadvance" style="color:blue;">
+                Recording will finish in {{ props.my.duration }} seconds
+            </p>
+            <p v-else-if="props.my.hide_early" style="color:blue;">
+                Recording will be ready to finish in {{ props.my.duration }} seconds 
+            </p>
+        </template>
     </div>
     <div class="j_divider"/>
 </template>
@@ -42,9 +56,9 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-const show_max_duration = ref(false)
+const show_max_duration = ref(props.my.max_duration!>0)
 function toggle_max_duration(){
-    if (show_max_duration.value){
+    if (show_max_duration.value === true){
         show_max_duration.value = false
         props.my.max_duration=undefined
     } else{

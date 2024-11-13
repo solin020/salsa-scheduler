@@ -29,6 +29,10 @@ function reclick(){
         succeed_flag.value=true
         setTimeout(() => {succeed_flag.value=false},1000)
     }).catch( (e:Response) => {
+        if (!e.statusText){
+            loading_flag.value = false
+            return
+        }
         loading_flag.value = false
         alert(e.statusText)
     })

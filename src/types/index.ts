@@ -44,6 +44,7 @@ export type Recording = {
     hide_controls?: boolean
     duration?: number
     max_duration?:number
+    message?:string
 }
 
 export type SingleChoiceDropdown = {

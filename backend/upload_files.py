@@ -100,36 +100,46 @@ async def save_message_response_nozip(project: str,
                    f''' -d -o "{fullname}" "{gpg_destination}" ;'''
                    f''' rm "{gpg_destination}" ;''')
         await (await asyncio.create_subprocess_shell(command)).wait()
-        command = f"""ffprobe -loglevel error -show_entries stream=codec_type -of default=nw=1 '{fullname}'"""
-        proc = await asyncio.create_subprocess_shell(
-            command,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
-        )
-        audiocheck, stderr = await proc.communicate()
-        print('audiocheck', infile, audiocheck, stderr, flush=True)
-        if b'audio' in audiocheck:
-            totranscribe_filename = fullname + '_totranscribe.wav'
-            print('attempting transcription')
-            command = f"""ffmpeg -i '{fullname}' -acodec pcm_s16le -ar 16000 -ac 1 '{totranscribe_filename}'"""
-            await (await asyncio.create_subprocess_shell(command)).wait()
-            async with aiofiles.open(totranscribe_filename, 'rb') as f:
-                async with aiohttp.ClientSession() as session:
-                    async with session.post(f'http://salsa2_whisperx:9876/process-bytes', data=(await f.read())[42:]) as resp:
-                        print('transcription finished')
-                        name = filename.split('.')[0]
-                        db.add(
-                            Transcription(
-                                project=project,
-                                schedule_id=schedule_id,
-                                segments=json.loads(await resp.json()),
-                                score=0,
-                                stimulus_id=name
-                            )
-                        )  
+        asyncio.ensure_future(save_transcription(project, schedule_id, fullname, infile, filename, db))
     await db.commit()
     os.chdir(cwd)
 
+
+async def save_transcription(project: str, 
+                                schedule_id:str,  
+                                fullname: str,
+                                infile: str,
+                                filename: str,
+                                db:AsyncSession):
+    command = f"""ffprobe -loglevel error -show_entries stream=codec_type -of default=nw=1 '{fullname}'"""
+    proc = await asyncio.create_subprocess_shell(
+        command,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
+    )
+    audiocheck, stderr = await proc.communicate()
+    print('audiocheck', infile, audiocheck, stderr, flush=True)
+    if b'audio' in audiocheck:
+        totranscribe_filename = fullname + '_totranscribe.wav'
+        print('attempting transcription')
+        command = f"""ffmpeg -i '{fullname}' -acodec pcm_s16le -ar 16000 -ac 1 '{totranscribe_filename}'"""
+        await (await asyncio.create_subprocess_shell(command)).wait()
+        async with aiofiles.open(totranscribe_filename, 'rb') as f:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(f'http://salsa2_whisperx:9876/process-bytes', data=(await f.read())[42:]) as resp:
+                    print('transcription finished')
+                    name = filename.split('.')[0]
+                    db.add(
+                        Transcription(
+                            project=project,
+                            schedule_id=schedule_id,
+                            segments=json.loads(await resp.json()),
+                            score=0,
+                            stimulus_id=name
+                        )
+                    )  
+    await db.commit()
+    
 
 def get_visit_dir_path(project, schedule_id):
     return os.path.join(message_response_directory, project, schedule_id)

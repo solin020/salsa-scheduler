@@ -10,9 +10,10 @@ from database import (Admin, Coordinator, Annotator, Participant,
     TwilioInfo)
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select, text
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from uuid import uuid4
-import re, aiofiles, os, aiofiles.os, phonenumbers, asyncio
+import re, aiofiles, os, aiofiles.os, phonenumbers, asyncio, csv, zipfile
+from zipfile import ZipFile
 from config import (frontend_directory,
     account_sid, auth_token, twilio_number)
 from dataclasses import dataclass
@@ -26,6 +27,8 @@ from upload_files import (save_message_response, save_message_response_nozip,sav
     make_file_zip)
 from test_prototype import TestPrototypeMetadata
 from fastapi.middleware.cors import CORSMiddleware
+from io import StringIO, BytesIO
+from starlette.middleware.base import BaseHTTPMiddleware
 
 RETRIES = 3
 RETRY_SECONDS = 600
@@ -39,7 +42,18 @@ app.add_middleware(
 )
 client = Client(account_sid, auth_token)
 
-                             
+
+class NoCacheMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app):
+        super().__init__(app)
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["Cache-Control"] = "no-cache"
+        return response
+
+app.add_middleware(NoCacheMiddleware)
+
                                                                                                 
 
 
@@ -535,6 +549,69 @@ async def coordinator_get_test_prototypes(project:str, db:AsyncSession=Depends(g
                 'stimulus_ids':stimulus_ids,
             })
     return retval
+
+@app.get('/salsa/server/get-schedule-csv')
+async def coordinator_get_schedule_csv(project:str, schedule_prototype_id:str, db:AsyncSession=Depends(get_db)):
+    response_stimuli: dict[str,dict[str,any]] = {}
+    response_stimuli_headers: dict[str, set[str]] = {}
+    #this finds every ema survey in the project
+    for tp in (await (db.exec(select(TestPrototype).where(TestPrototype.project==project)))).all():
+        async with aiofiles.open(get_test_prototype_file_path(tp.project, tp.id, 'metadata.json')) as f:
+            metadata = json.loads(await f.read())
+            for m in metadata['stimuli']:
+                if m['type'] == 'ema':
+                    response_stimuli[m['id']] = []
+                    response_stimuli_headers[m['id']] = set()
+
+    mrs = (await db.exec(
+    select(StimulusResult).where(
+            StimulusResult.project==project
+        ).where(
+            StimulusResult.schedule_prototype_id==schedule_prototype_id
+        ))).all()
+    #this identifies json files that are ema survey response files and sorts them by which survey they belong to
+    schedule_ids = set()
+    for mr in mrs:
+        if not mr.schedule_id: continue
+        if mr.schedule_id in schedule_ids: continue
+        mr_directory = get_visit_dir_path(mr.project, mr.schedule_id)
+        for filename in await aiofiles.os.listdir(mr_directory):
+            for stimid in response_stimuli.keys():
+                if filename.endswith(stimid + '.json'):
+                    schedule_ids.add(mr.schedule_id)
+                    with open(get_visit_file_path(mr.project, mr.schedule_id, filename)) as f:
+                        data: dict[str,any] = json.load(f)
+                        data['participant_id'] = mr.participant_id
+                        data['timestamp'] = mr.real_timestamp
+                        data['sequence_no'] = mr.sequence_no
+                        data['quality'] = mr.quality
+                        data['schedule_id'] = mr.schedule_id
+                        data['test_prototype_id'] = mr.test_prototype_id
+                        response_stimuli[stimid].append(data)
+                        response_stimuli_headers[stimid].update(data.keys())
+                    break
+    #this creates a separate csv for each ema survey and zips them together
+    from zipfile import ZipFile
+    retval = BytesIO()
+    with ZipFile(retval, 'w', zipfile.ZIP_DEFLATED) as myzip:
+        for survey_name, survey_data in response_stimuli.items():
+            with StringIO() as f:
+                writer = csv.DictWriter(f, fieldnames=list(response_stimuli_headers[survey_name]))
+                writer.writeheader()
+                for data in survey_data:
+                    writer.writerow(data)
+                f.seek(0)
+                csvcont = f.read()
+                print('csvcont', csvcont, flush=True)
+                myzip.writestr(f'{survey_name}.csv', csvcont)
+    retval.seek(0)
+    return Response(content=retval.read(), headers={'Content-Disposition':f'attachment; filename=f{survey_name}.zip', 'Content-Type': 'application/zip' })
+    
+
+
+
+    
+    
 
 
 

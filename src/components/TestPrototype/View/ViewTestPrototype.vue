@@ -93,6 +93,7 @@ DefaultService.getTestPrototypeFilesSalsaServerGetTestPrototypeFilesGet(props.tp
                 if (['image', 'video', 'audio'].includes(stim.type)){
                     // @ts-expect-error
                     const this_stim: (ImageType|VideoType|AudioType) = stim
+
                     const filepath = full_pathlist.filter(s => s.endsWith(this_stim.uri))[0]
                     fetch(filepath).then(r => r.blob()).then( b=>{
                         console.log(filepath, 'filepath retrieved')

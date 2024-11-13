@@ -154,6 +154,7 @@
                     <thead>
                         <tr>
                             <th>Participant id</th>
+                            <th></th>
                             <th v-for="phase in current_schedule_prototype.phases">
                                 {{ phase.id }}
                             </th>
@@ -177,6 +178,11 @@
                             >
                                 {{participant_id}}⬇
                             </th>
+                            <td>
+                                <j-btn :click="dropout_participant" :arg0="participant_id">
+                                    Dropout participant {{ participant_id }}
+                                </j-btn>
+                            </td>
                             <td v-for="phase in current_schedule_prototype.phases">
                                 <ViewVisit 
                                     v-for="visit,i in sort_visits(visit_data.get(phase.id)||[])"
@@ -205,6 +211,7 @@
             </v-card-actions>
         </v-card>
     </v-dialog>
+    <v-btn @click="download_csv_data" v-if="current_schedule_prototype_id">Download only csv survey data for study {{ current_schedule_prototype_id }}</v-btn>
     <v-btn @click="download_study_data" v-if="current_schedule_prototype_id">Download data for study {{ current_schedule_prototype_id }}</v-btn>
     <v-btn @click="download_project_data">Download all data for project {{ project }}</v-btn>
 </template>
@@ -215,9 +222,10 @@ import {
     schedule_prototype_list_key, project_key, test_prototypes_key, response_stimuli_key,
     close_all_key
  } from '@/injectkeys'
-import type {SchedulePrototype, ResponseStimulus} from '@/types/schedule'
+import type {SchedulePrototype, ResponseStimulus, TestPrototypeChoice} from '@/types/schedule'
 import ViewVisit from './ViewVisit.vue'
 import JTabs from '../JTabs.vue'
+import JBtn from '../JBtn.vue'
 import PhaseHeaders from './PhaseHeaders.vue'
 import { get_unique_stimuli, count_visits, participant_has_data } from './dashboard_logic'
 import type { StimulusResult, Visit } from '@/types/schedule'
@@ -265,12 +273,27 @@ watch(current_schedule_prototype, ()=>{
 const unique_stimuli = computed(()=>
     get_unique_stimuli(test_prototypes.value, current_schedule_prototype.value)
 )
+
+
 const default_stimuli = computed(()=>{
     const x = current_schedule_prototype.value.default_selection
     if (x){
-        return test_prototypes.value.filter( tp =>
+        if (x.type==='fixed'){
+            return test_prototypes.value.filter( tp =>
             tp.id === x.test_prototype_id
-        )[0].response_stimuli
+            )[0].response_stimuli
+        } else if (x.type==='random' || x.type==='choose'){
+            const retval: Map<string,{
+                id: string;
+                    type: "recording" | "ema";
+            }> = new Map()
+            test_prototypes.value.filter( tp =>
+                x.test_prototype_ids.includes(tp.id)
+            ).forEach(ttp => ttp.response_stimuli.forEach(rr => retval.set(rr.id, rr)))
+            return Array.from(retval.values())
+        } else{
+            return []
+        }
     } else{
         return []
     }
@@ -315,6 +338,18 @@ async function download_participant_data(participant_id:string){
     dialog_open.value=true
 }
 
+async function download_csv_data(){
+    const resp =  (await (
+        await fetch(`/salsa/server/get-schedule-csv?${new URLSearchParams({
+            project,
+            schedule_prototype_id: current_schedule_prototype_id.value
+        })}`)
+    ).blob())
+    download_url.value = URL.createObjectURL(resp)
+    download_name.value = `${current_schedule_prototype_id.value}.zip`
+    dialog_open.value=true
+}
+
 async function download_study_data(){
     const resp =  (await (
         await fetch(`/salsa/server/get-study-zip?${new URLSearchParams({
@@ -334,6 +369,19 @@ async function download_project_data(){
     download_url.value = URL.createObjectURL(resp)
     download_name.value = `${project}.zip`
     dialog_open.value=true
+}
+
+async function dropout_participant(id: string): Promise<Response>{
+    const proceed = confirm(`Are you sure you want to drop out participant ${id}`)
+    //@ts-expect-error
+    if (!proceed){return}
+    const retval =  fetch('/salsa/server/api/drop-participant?' + new URLSearchParams({id}),{method:'PATCH'})
+    retval.then(r => {
+        if (r.status===200){
+            alert(`Participant ${id} dropped out succesfully! Please reload webpage`)
+        }
+    })
+    return retval
 }
 
 

@@ -10,7 +10,7 @@ import { isWhiteSpaceSingleLine } from 'typescript'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: `https://rxinformatics.net/salsa/server/`,
+  base: `/salsa/server/`,
   plugins: [
     vue(),
   ],

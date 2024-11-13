@@ -150,6 +150,25 @@ export function prepare_schedule_for_upload(
     const sequence_no_generator = counter()
     return {
         ...ws,
+        default_selection: function(ds){
+            if(ds){
+                if(ds.type==='fixed'){
+                    return ds
+                } else if (ds.type==='choose'){
+                    return {
+                        type:ds.type,
+                        test_prototype_ids: tp.value.filter(ttp => ttp.groups.includes(ds.group)).map(ttp => ttp.id)
+                    }
+                } else if (ds.type==='random'){
+                    return {
+                        type:ds.type,
+                        test_prototype_ids: tp.value.filter(ttp => ttp.groups.includes(ds.group)).map(ttp => ttp.id)
+                    }
+                }
+            } else{
+                return undefined
+            }
+        }(ws.default_selection),
         prototype_selection: ws.prototype_selection?.type==='same-across-patients' ? 
             undefined : 
             ws.prototype_selection,
@@ -241,7 +260,6 @@ export function prepare_schedule_for_participant(
         prototype_selection:undefined,
         default_selection:ws.default_selection,
         timing:undefined,
-        test_mode:ws.test_mode,
         phases: ws.phases.map(
             p => {
                 const phase_prototype_generator = p.prototype_selection ? 

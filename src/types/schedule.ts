@@ -17,6 +17,21 @@ type Result = {
 type ScheduleLocation = ('website' | 'database' | 'device' | 'result')
 type ScheduleLevel = ('base'|'phase'|'entry')
 
+export type DefaultTestPrototypeChoice<Location extends ScheduleLocation> = 
+    Location extends 'website'? {
+        type:('random'|'choose')
+        group: string
+    } | {
+        type: 'fixed'
+        test_prototype_id:string
+    } : {
+        type:('random'|'choose')
+        test_prototype_ids: string[]
+    } | {
+        type: 'fixed'
+        test_prototype_id:string
+    }
+
 export type TestPrototypeChoice<
     Location extends ScheduleLocation,
     Level extends ScheduleLevel
@@ -142,7 +157,6 @@ export type PhaseSpec<Location extends ScheduleLocation> = Location extends ("we
 }
 
 
-
 export type SchedulePrototype<Location extends ScheduleLocation> = {
     schedule_id:string
     participant_timezone: Location extends ("device"|"result") ? Timezone : undefined
@@ -150,13 +164,26 @@ export type SchedulePrototype<Location extends ScheduleLocation> = {
     timing?:Timing<Location, 'base'>
     prototype_selection: TestPrototypeChoice<Location, 'base'>
     default_results: Location extends ("result") ? Result[] : undefined
-    default_selection?: TestPrototypeChoice<'device','entry'>
+    default_selection?: DefaultTestPrototypeChoice<Location>
     twilio_info: Location extends ("database"|"website") ? string : undefined
-    test_mode?: boolean
     phases: 
     {
         id:string
         spec:PhaseSpec<Location>
+        reminder_message?:string
+        reminder_message_hour?:number
+        reminder_message_minute?:number
+        start_message?:string
+        nudge_message?:string
+        nudge_message_hour?:number
+        nudge_message_minute?:number
+        ty1_message?:string
+        ty1_message_hour?:number
+        ty1_message_minute?:number
+        ty2_message?:string
+        ty2_message_hour?:number
+        ty2_message_minute?:number
+
         prototype_selection: TestPrototypeChoice<Location, 'phase'>
     }[]
 }

@@ -52,17 +52,40 @@
                     </span>
                     <v-btn v-if="!my.default_selection"
                         @click="my.default_selection={type:'fixed', test_prototype_id:''}"
-                        >Allow participants to take tests outside of the schedule?</v-btn>
+                        >Allow self administered tests?</v-btn>
                     <template v-if="my.default_selection">
                         <v-btn @click="my.default_selection=undefined">Remove outside of schedule tests</v-btn>
                         <v-select
+                            label="Self administered test type"
+                            :items="[{
+                                title:'Single test',
+                                value:'fixed'
+                            },{
+                                title:'Random',
+                                value:'random'
+                            },{
+                                title:'Participant chooses',
+                                value:'choose'
+                            }]"
+                            @update:model-value="(e) => set_default(e)"
+                        />
+                        <v-select v-if="my.default_selection.type==='fixed'"
                             :items="test_prototype_ids"
-                            label="test prototype for unscheduled test"
+                            label="test prototype for self administered test"
                             v-model="my.default_selection.test_prototype_id"
+                        />
+                        <v-select v-else-if="my.default_selection.type==='random'"
+                            :items="groups"
+                            label="group for self administered test choice"
+                            v-model="my.default_selection.group"
+                        />
+                        <v-select v-else-if="my.default_selection.type==='choose'"
+                            :items="groups"
+                            label="group for self administered test random selection"
+                            v-model="my.default_selection.group"
                         />
                     </template>
                     <br/>
-                    Allow participant to choose their own test? <input type="checkbox" v-model="my.test_mode"/>
                 </v-card-text>
             </v-card>
         </template>
@@ -214,7 +237,7 @@ import {ref, type Ref, computed, inject} from 'vue'
 import { prepare_schedule_for_participant,
     prepare_schedule_for_upload,
  } from './schedule_logic'
-import { test_prototypes_key, twilio_key, project_key, reload_schedule_prototypes_key, schedule_prototype_list_key } from '@/injectkeys'
+import { test_prototypes_key, twilio_key, project_key, reload_schedule_prototypes_key, schedule_prototype_list_key, groups_key } from '@/injectkeys'
 import JBtn from '../JBtn.vue'
 import JBreadcrumbs from '../JBreadcrumbs.vue'
 import JList from '../JList.vue'
@@ -225,6 +248,8 @@ const twilios = inject(twilio_key)!
 const twilio_nicknames = computed(()=>twilios.value.map(t=>t.nickname))
 const project = inject(project_key)!
 const reload_schedules = inject(reload_schedule_prototypes_key)!
+const groups = inject(groups_key)!
+
 
 const sample_startdate = ref(new Date())
 const schedule_prototypes = inject(schedule_prototype_list_key)!
@@ -249,6 +274,27 @@ const my: Ref<SchedulePrototype<'website'>> = ref({
 })
 
 
+
+function set_default(type:('fixed'|'random'|'choose')){
+    if (type==='fixed'){
+        my.value.default_selection = {
+            type:'fixed',
+            test_prototype_id:''
+        }
+    }
+    else if (type==='random'){
+        my.value.default_selection = {
+            type:'random',
+            group:''
+        }
+    }
+    else if (type==='choose'){
+        my.value.default_selection = {
+            type:'choose',
+            group:''
+        }
+    }
+}
 
 const preview_schedule: Ref<SchedulePrototype<'device'>|undefined> = ref() 
 const preview_events = computed(()=>{

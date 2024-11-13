@@ -29,6 +29,9 @@
                 <v-card-subtitle v-if="schedule_id">
                     Schedule id: {{ schedule_id }}
                 </v-card-subtitle>
+                <v-card-subtitle>
+                    Test prototype id: {{ test_prototype_id }}
+                </v-card-subtitle>
                 <v-card-subtitle v-if="randomization_report">
                     <p>Randomization order:</p>
                     <p v-for="r in randomization_report">{{ r }}</p>
@@ -166,6 +169,10 @@ const style = computed(()=>{
 
 const participant_id = computed(()=>{
     return props.my.results[0].participant_id
+})
+
+const test_prototype_id = computed(()=>{
+    return props.my.results[0].test_prototype_id
 })
 
 const formal_timestamp = computed(()=>
