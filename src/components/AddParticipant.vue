@@ -8,13 +8,16 @@
         <template #content_metadata>
             <v-text-field
                 style="width: 30vw;"
-                :rules="[id_regex_test]" v-model="participant_id" label="Enter participant's study id (also used as the code for participant login)"/>
+                :rules="[id_regex_test]" v-model="participant_id" label="Enter participant's login code"/>
+            <v-text-field
+                style="width: 30vw;"
+                v-model="dashboard_code" label="Enter participant's study id (participants will not see this)"/>
             <v-text-field
                 style="width: 30vw;"
                 v-model="phone_number" label="Enter participant's phone number"/>
             <timezone-selector
                 style="width: 30vw;"
-                :tz="participant_timezone"/>
+                v-model="participant_timezone"/>
             <v-select
                 style="width: 30vw;"
                 label="Longitudinal study id" :items="schedule_prototype_ids" v-model="schedule_prototype_id"/>
@@ -62,9 +65,10 @@ const can_display = computed(()=>schedule_prototypes.value.length>0)
 
 const participant_id = ref("")
 const phone_number = ref("")
+const dashboard_code = ref("")
 const schedule_prototype_id = ref("")
 const start_date = ref(new Date())
-const participant_timezone: Ref<Timezone> = ref("America/Chicago")
+const participant_timezone = ref<Timezone>()
 
 
 
@@ -121,31 +125,44 @@ const preview_schedule: Ref<SchedulePrototype<'device'>|undefined> = ref()
     }
 })
 function view_preview(){
-    preview_schedule.value = prepare_schedule_for_participant(
-        schedule_prototype.value,
-        test_prototypes,
-        start_date.value,
-        participant_id.value,
-        participant_timezone.value
-    )
+    if (!(participant_timezone.value)){
+        alert('Please go back and set participant timezone')
+    } else{
+        preview_schedule.value = prepare_schedule_for_participant(
+            schedule_prototype.value,
+            test_prototypes,
+            start_date.value,
+            participant_id.value,
+            participant_timezone.value
+        )
+    }
 }
 
-function upload_participant(){
-    const retval = fetch('/salsa/server/api/add-participant?' + new URLSearchParams({
-        id: participant_id.value,
-        project,
-        phone_number: phone_number.value,
-        schedule_prototype_id: preview_schedule.value!.schedule_id,
-        twilio_nickname: schedule_prototype.value!.twilio_info
-    }), {method:'POST', body: JSON.stringify(preview_schedule.value)})
-    retval.then(r => {
-        if (r.status===200){
-            alert(`Participant ${participant_id.value} uploaded succesfully!`)
-            participant_id.value=''
-            phone_number.value=''
-        }
-    })
-    return retval
+function upload_participant():Promise<Response>{
+    if (!(participant_timezone.value)){
+        alert('Please go back and set participant timezone')
+        //@ts-ignore
+        return undefined
+    } else{
+        const retval = fetch('/salsa/server/api/add-participant?' + new URLSearchParams({
+                id: participant_id.value,
+                project,
+                phone_number: phone_number.value,
+                schedule_prototype_id: preview_schedule.value!.schedule_id,
+                twilio_nickname: schedule_prototype.value!.twilio_info,
+                dashboard_code: dashboard_code.value,
+                timezone:participant_timezone.value,
+            }), {method:'POST', body: JSON.stringify(preview_schedule.value)})
+        retval.then(r => {
+            if (r.status===200){
+                alert(`Participant ${participant_id.value} uploaded succesfully!`)
+                participant_id.value=''
+                phone_number.value=''
+            }
+        })
+        return retval
+    }
+
 }
 
 

@@ -263,7 +263,10 @@ async def make_file_zip(files:list[str])->bytes:
         await aiofiles.os.mkdir(download_directory)  
     os.chdir(download_directory)
     for sid, fname in files:
-        command = f'''cp '{fname}' '{download_directory}/{sid}|{fname.split('/')[-1]}' '''
+        participant_id = fname.split('&')[1].split('=')[1]
+        print('participant_id', participant_id, flush=True)
+        print('sid', sid, flush=True)
+        command = f'''mkdir -p {download_directory}/{participant_id}/{sid}; cp '{fname}' '{download_directory}/{participant_id}/{sid}/{sid}|{fname.split('/')[-1]}' '''
         await (await asyncio.create_subprocess_shell(command)).wait()
     command = f'''zip -r {zip_location} . '''
     print('zipcommand', command)

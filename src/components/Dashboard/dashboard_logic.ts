@@ -44,31 +44,44 @@ class QualitySet {
     missed: number
     future: number
     dropout: number
+    open: number
+    duplicate: number
     constructor(){
         this.good_quality = 0
         this.low_quality = 0
         this.missed = 0
         this.future = 0
         this.dropout = 0
+        this.open = 0
+        this.duplicate = 0
     }
     insert(sr:StimulusResult<'parsed'>){
         if (sr.quality === 3){
             this.good_quality++
         } else if (sr.quality === 2){
             this.low_quality++
+        } else if (sr.quality ===4){
+            this.low_quality++
+            this.duplicate++
         } else if(sr.quality === 1){
             this.missed ++
         } else if (sr.quality === 0){
             this.future ++
         } else if (sr.quality === 100){
             this.dropout ++ 
+        } else if (sr.quality === 99){
+            this.future ++
         }
     }
-    insert_visit(results: StimulusResult<'parsed'>[]):(0|1|2|3|100){
+    insert_visit(results: StimulusResult<'parsed'>[]):(0|1|2|3|100|99|4){
         results
         if (results.every(sr => sr.quality===3)){
             this.good_quality++
             return 3
+        } else if (results.some(sr => sr.quality===4)){
+            this.low_quality++
+            this.duplicate++
+            return 4
         } else if (results.some(sr => ([3,2].includes(sr.quality)))){
             this.low_quality++
             return 2
@@ -78,7 +91,12 @@ class QualitySet {
         } else if (results.some(sr => sr.quality===1)){
             this.missed++
             return 1
-        } else {
+        } else if (results.some(sr => sr.quality===99)) {
+            this.future++
+            this.open++
+            return 99
+        }
+        else {
             this.future++
             return 0
         }
@@ -139,6 +157,28 @@ type VisitStats = {
     }>
     by_default_stim_type:Map<string, QualitySet>
 }
+
+type ParticipantPhase = {
+    tag:'dropout'
+} | {
+    tag: 'awaiting'
+    phase: string
+} | {
+    tag: 'active'
+    phase:string
+} | {
+    tag: 'complete'
+}
+type ParticipantPhaseMap = Map<string, ParticipantPhase>
+function participantPhaseEquals(pp1:ParticipantPhase, pp2:ParticipantPhase):boolean{
+    if (pp1.tag === 'dropout' || pp1.tag === 'complete'){
+        return pp1.tag === pp2.tag
+    } else if (pp1.tag === 'active' || pp1.tag === 'awaiting'){
+        return  pp1.tag === pp2.tag && pp1.phase === pp2.phase
+    }
+    return false
+}
+
 type ParticipantScheduleStructure = Map<string, Map<string|-1, Visit[]>>
 
 //Check if any data present for participant (there will be a 2 or a 3 quality registered for any files they submit)
@@ -153,6 +193,99 @@ export function participant_has_data(pss: ParticipantScheduleStructure, particip
     }
     return retval
 }
+type FilterableParticipantScheduleStructure = [ParticipantPhase, {
+    startTime: Date, 
+    pid:string,
+    phases: Map<string | -1, Visit[]>
+}[]][]
+function get_participant_phases(pss: ParticipantScheduleStructure):FilterableParticipantScheduleStructure{
+    const now = new Date()
+    const participantPhaseMap = new Map<string, [Date, ParticipantPhase]>()
+    const allParticipantsAndPhases:FilterableParticipantScheduleStructure= []
+    let phase_order_found = false
+    const phase_order: string[] = []
+    founddropout: for (const [pid, phases] of pss.entries())  {
+        const phaseTimes: {phasename:string, start:Date, end:Date}[] = []
+        for (const [phasename, visits] of phases.entries()){
+            const visitTimes: Date[] = []
+            for (const visit of visits) {
+                const resultTimes: Date[] = []
+                for (const r of visit.results) {
+                    if (r.quality === 100){
+                        participantPhaseMap.set(pid, [r.formal_timestamp!, {tag:'dropout'}])
+                        continue founddropout
+                    }
+                    if (r.real_timestamp){
+                        resultTimes.push(r.real_timestamp)
+                    } else if (r.formal_timestamp){
+                        resultTimes.push(r.formal_timestamp)
+                    }
+                }
+                resultTimes.sort((a, b) => (a>=b)?1:0)
+                if (resultTimes.length === 0){
+                    //If somehow there's errors and both formal timestamp and real timestamp are missing
+                    resultTimes.push(new Date('1971-01-01'))
+                }
+                visitTimes.push(resultTimes.pop()!)
+            }
+            visitTimes.sort((a, b) => (a>=b)?1:0)
+            if (visitTimes.length === 0){
+                //If somehow there's errors and both formal timestamp and real timestamp are missing
+                visitTimes.push(new Date('1971-01-01'))
+            }
+            const phaseStart = visitTimes[0]
+            const phaseEnd = visitTimes.pop()!
+            if (phasename !== -1){
+                //Don't include self initiated tests (marked with phase -1)
+                phaseTimes.push({phasename, start:phaseStart, end:phaseEnd})
+            }
+        }
+        phaseTimes.sort((p1, p2) => (p1.start > p2.start)?1:0)
+        const participantStart = phaseTimes[0]?.start || new Date('1971-01-01')
+        for (const {phasename, start, end} of phaseTimes){
+            if (!phase_order_found){
+                phase_order.push(phasename)
+            }
+            if (now < start){
+                participantPhaseMap.set(pid, [participantStart,{
+                    tag:'awaiting',
+                    phase:phasename
+                }])
+                break
+            } else {
+                if (now < end){
+                    participantPhaseMap.set(pid, [participantStart,{
+                        tag:'active',
+                        phase:phasename
+                    }])
+                    break
+                }
+            }
+        }
+        if (!participantPhaseMap.has(pid)){
+            participantPhaseMap.set(pid, [participantStart,{tag:'complete'}])
+        }
+        phase_order_found = true
+    }
+    for (const phase of phase_order){
+        allParticipantsAndPhases.push([{tag:'active',phase }, []])
+        allParticipantsAndPhases.push([{tag:'awaiting',phase }, []])
+    }
+    allParticipantsAndPhases.push([{tag:'complete'}, []])
+    allParticipantsAndPhases.push([{tag:'dropout'}, []])
+    found: for (const [pid, [startTime, phasepoint_p]] of participantPhaseMap.entries()){
+        for (const [phasepoint_r, participants] of allParticipantsAndPhases){
+            if (participantPhaseEquals(phasepoint_p, phasepoint_r)){
+                participants.push({startTime, pid, phases:pss.get(pid)!})
+                continue found
+            }
+        }
+    }
+    for (const [phasepoint_r, participants] of allParticipantsAndPhases){
+        participants.sort((a,b) => (a.startTime < b.startTime)?1:0)
+    }
+    return allParticipantsAndPhases
+}
 
 
 
@@ -161,10 +294,11 @@ export function count_visits(
         expected_stimuli:ResponseStimulus[], 
         expected_default_stimuli:ResponseStimulus[],
         schedule_prototype: SchedulePrototype<'database'>
-    ):[VisitStats, ParticipantScheduleStructure]{
+    ):[VisitStats, ParticipantScheduleStructure, FilterableParticipantScheduleStructure]{
 
     const now =  new Date()
     const visit_map: Map<string, {phase:string|-1, results:typeof data}> = new Map()
+    const dashboard_code_map: Map<string, string> = new Map()
     const phases = schedule_prototype.phases.map(p => p.id)
     const phase_map: Map<number, string> = new Map()
     const expected_default_stimuli_ids = expected_default_stimuli.map(ds => ds.id)
@@ -268,7 +402,7 @@ export function count_visits(
             }
         }
     }
-    return [visit_stats, participant_schedule_structure]
+    return [visit_stats, participant_schedule_structure, get_participant_phases(participant_schedule_structure)]
 }
 
 export function get_src(schedule_id:string, filepath:string):string{

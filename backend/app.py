@@ -7,7 +7,7 @@ from twilio.rest import Client
 from database import (Admin, Coordinator, Annotator, Participant, 
     MessageSchedule, StimulusResult, TestPrototype, Transcription,
     get_db, update_users, SchedulePrototype, AllGroups, VisitResult,
-    TwilioInfo)
+    TwilioInfo, MessageView)
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select, text
 from datetime import datetime, timezone
@@ -29,6 +29,7 @@ from test_prototype import TestPrototypeMetadata
 from fastapi.middleware.cors import CORSMiddleware
 from io import StringIO, BytesIO
 from starlette.middleware.base import BaseHTTPMiddleware
+
 
 RETRIES = 3
 RETRY_SECONDS = 600
@@ -88,15 +89,33 @@ async def device_upload_response_file_nozip(r:Request, db:AsyncSession=Depends(g
             real_timestamp.isoformat(), participant.id, 
             infiles, names, db
         )
-        if (mr := (await db.exec(select(StimulusResult)
+        if sequence_no >= 0 and (mrs := list((await db.exec(select(StimulusResult)
                 .where(StimulusResult.test_prototype_id == test_prototype_id)
                 .where(StimulusResult.stimulus_id == stimulus_id)
                 .where(StimulusResult.participant_id == participant.id)
                 .where(StimulusResult.sequence_no == sequence_no)
-            )).one_or_none()):
-            mr.quality = '3'
-            mr.real_timestamp=real_timestamp
-            mr.schedule_id=schedule_id
+            )).all())):
+            mr = mrs[0]
+            if not (mr.quality in ['2','3','4']):
+                mr.quality = '3'
+                mr.real_timestamp=real_timestamp
+                mr.schedule_id=schedule_id
+            else:
+                old_mr = mr
+                mr = StimulusResult(
+                    project=participant.projects[0],
+                    schedule_id=schedule_id,
+                    participant_id=participant.id,
+                    test_prototype_id=test_prototype_id,
+                    miscellaneous={}, 
+                    stimulus_id=stimulus_id,
+                    sequence_no=sequence_no,
+                    real_timestamp=real_timestamp,
+                    formal_timestamp=old_mr.formal_timestamp,
+                    quality='4',
+                    schedule_prototype_id=participant.schedule_prototype_id
+                ) 
+
         else:
             mr = StimulusResult(
                 project=participant.projects[0],
@@ -117,53 +136,6 @@ async def device_upload_response_file_nozip(r:Request, db:AsyncSession=Depends(g
     return Response('Invalid response code', status_code=406)
                
 
-@app.post('/salsa/server/api/upload-response-file')
-async def coordinator_upload_response_file(r:Request,  db:AsyncSession=Depends(get_db)):
-    schedule_id = r.query_params['schedule_id']
-    test_prototype_id = r.query_params['test_prototype_id']
-    project = r.query_params['project']
-    subject_id = r.query_params['subject_id']
-    sequence_no = int(r.query_params['sequence_no'])
-    real_timestamp = datetime.fromisoformat(r.query_params['timestamp'].replace('Z','+00:00'))
-    infiles = []
-    names = []
-    form = await r.form()
-    fname, fbody = list(form.items())[0]
-    infiles.append(fbody)
-    names.append(fname)
-    stimulus_id = fname.split('.')[0] 
-    if not (await db.exec(
-        select(Participant).where(Participant.id==subject_id)
-      )).one_or_none():
-        db.add(Participant(
-            projects=[project],
-            id= subject_id,
-            schedule_prototype_id=None,
-            schedule={},
-            twilio_nickname=None
-        ))
-        await db.commit()
-    await save_message_response_nozip(
-        project, schedule_id, test_prototype_id, 
-        real_timestamp.isoformat(), subject_id, 
-        infiles, names, db
-    )
-    mr = StimulusResult(
-        project=project,
-        schedule_id=schedule_id,
-        participant_id=subject_id,
-        test_prototype_id=test_prototype_id,
-        miscellaneous={}, 
-        stimulus_id=stimulus_id,
-        sequence_no=sequence_no,
-        real_timestamp=real_timestamp,
-        formal_timestamp=None,
-        schedule_prototype_id=None,
-        quality='3'
-    ) 
-    db.add(mr)
-    await db.commit()
-    return Response('OK')
 
 
 
@@ -266,7 +238,7 @@ async def delete_annotator(id:str, project:str, db:AsyncSession=Depends(get_db))
            
 
 @app.post('/salsa/server/api/add-participant')
-async def add_participant(r:Request, id:str, project:str, phone_number:str, schedule_prototype_id:str, twilio_nickname:str, db:AsyncSession=Depends(get_db)):
+async def add_participant(r:Request, id:str, project:str, phone_number:str, schedule_prototype_id:str, twilio_nickname:str, dashboard_code:str, timezone:str, db:AsyncSession=Depends(get_db)):
     pn = phonenumbers.parse(phone_number, "US")
     #this accounts for variability in phone number formatting
     adjusted_pn = f'+{pn.country_code}{pn.national_number}'
@@ -277,7 +249,9 @@ async def add_participant(r:Request, id:str, project:str, phone_number:str, sche
         dropout=False,
         schedule_prototype_id=schedule_prototype_id,
         schedule = await r.json(),
-        twilio_nickname=twilio_nickname)
+        twilio_nickname=twilio_nickname,
+        dashboard_code=dashboard_code,
+        timezone=timezone)
     db.add(participant)
     await db.commit()
     await update_users()
@@ -564,11 +538,19 @@ async def coordinator_get_schedule_csv(project:str, schedule_prototype_id:str, d
                     response_stimuli_headers[m['id']] = set()
 
     mrs = (await db.exec(
-    select(StimulusResult).where(
+        select(StimulusResult).where(
             StimulusResult.project==project
         ).where(
             StimulusResult.schedule_prototype_id==schedule_prototype_id
         ))).all()
+    participants = [p for p in list((await db.exec(
+        select(Participant).where(
+            Participant.schedule_prototype_id==schedule_prototype_id
+        ))).all()) if project in p.projects]
+    
+    participant_id_dashboard_code_map = {
+        p.id:p.dashboard_code for p in participants
+    }
     #this identifies json files that are ema survey response files and sorts them by which survey they belong to
     schedule_ids = set()
     for mr in mrs:
@@ -582,6 +564,7 @@ async def coordinator_get_schedule_csv(project:str, schedule_prototype_id:str, d
                     with open(get_visit_file_path(mr.project, mr.schedule_id, filename)) as f:
                         data: dict[str,any] = json.load(f)
                         data['participant_id'] = mr.participant_id
+                        data['dashboard_code'] = participant_id_dashboard_code_map[mr.participant_id]
                         data['timestamp'] = mr.real_timestamp
                         data['sequence_no'] = mr.sequence_no
                         data['quality'] = mr.quality
@@ -710,6 +693,27 @@ async def get_dashboard_data(project:str, schedule_prototype_id:str, db:AsyncSes
             'real_timestamp':s.real_timestamp
         })
     return retval
+
+@app.get('/salsa/server/api/get-messages')
+async def get_messages(participant_id:str,  db:AsyncSession=Depends(get_db)):
+    return {'timezone':(await db.exec(select(Participant).where(Participant.id==participant_id))).one().timezone, 
+            'messages': [
+                {
+                    'their_time':m.their_time,
+                    'utc_time':m.utc_time,
+                    'message':m.message,
+                    'sent':m.sent,
+                    'condition':m.condition
+                }
+                for m in (await db.exec(select(MessageView).where(MessageView.participant_id==participant_id))).all()]
+        }
+
+
+@app.post('/salsa/server/api/update-timezone')
+async def update_timezone(participant_id:str, timezone:str,  db:AsyncSession=Depends(get_db)):
+    await db.exec(text(f"CALL update_timezone('{participant_id}', '{timezone}')"))
+    await db.commit()
+
 
 
 

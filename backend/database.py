@@ -45,6 +45,8 @@ class Participant(SQLModel, table=True):
     schedule_prototype_id: str
     schedule: dict = Field(sa_column=Column(JSON))
     twilio_nickname: str
+    dashboard_code: str
+    timezone: str
 
 
 
@@ -98,7 +100,7 @@ class SchedulePrototype(SQLModel, table=True):
 class StimulusResult(SQLModel, table=True):
     __tablename__ = "stimulus_result"
     project: str
-    schedule_id: str 
+    schedule_id: str = Field(primary_key=True)
     participant_id: str = Field(primary_key=True)
     formal_timestamp: datetime = Field(sa_column=Column(sqlalchemy.types.DateTime(timezone=True)))
     real_timestamp: datetime = Field(sa_column=Column(sqlalchemy.types.DateTime(timezone=True)))
@@ -113,7 +115,7 @@ class StimulusResult(SQLModel, table=True):
 class VisitResult(SQLModel, table=True):
     __tablename__ = "visit_result"
     project: str
-    schedule_id: str 
+    schedule_id: str = Field(primary_key=True)
     participant_id: str = Field(primary_key=True)
     formal_timestamp: datetime = Field(sa_column=Column(sqlalchemy.types.DateTime(timezone=True)))
     real_timestamp: datetime = Field(sa_column=Column(sqlalchemy.types.DateTime(timezone=True)))
@@ -140,6 +142,18 @@ class AllGroups(SQLModel, table=True):
     __tablename__ = 'all_groups'
     project: str
     group: str = Field(primary_key=True)
+
+
+@dataclass
+class MessageView(SQLModel, table=True):
+    __tablename__ = 'message_view'
+    participant_id: str = Field(primary_key=True)
+    their_time: datetime = Field(sa_column=Column(sqlalchemy.types.DateTime(timezone=False), primary_key=True))
+    utc_time: datetime = Field(sa_column=Column(sqlalchemy.types.DateTime(timezone=False), primary_key=True))
+    message: str  = Field(primary_key=True)
+    condition: str = Field(primary_key=True)
+    sent: bool = Field(primary_key=True)
+
   
     
 

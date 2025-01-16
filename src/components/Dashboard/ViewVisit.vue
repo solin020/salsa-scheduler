@@ -5,7 +5,7 @@
         :style="style">
         {{ props.my.sequence_no>=0 ? props.my.sequence_no : ' ' }}
         <v-overlay
-            location-strategy="connected"
+            location-strategy="static"
             activator="parent"
             v-model="details_open"
         >
@@ -26,32 +26,49 @@
                 <v-card-subtitle v-else>
                     Not yet submitted
                 </v-card-subtitle>
-                <v-card-subtitle v-if="schedule_id">
-                    Schedule id: {{ schedule_id }}
+                <v-card-subtitle v-if="schedule_ids.length===1">
+                    Schedule id: {{ schedule_ids[0] }}
                 </v-card-subtitle>
+                <template v-else-if="schedule_ids.length>1">
+                    <v-card-subtitle style="color: red;">
+                        DUPLICATED SUBMISSIONS
+                    </v-card-subtitle>
+                    <v-card-subtitle v-for="schedule_id in schedule_ids">
+                        Schedule id: {{ schedule_id }}
+                    </v-card-subtitle>
+                </template>
                 <v-card-subtitle>
                     Test prototype id: {{ test_prototype_id }}
                 </v-card-subtitle>
-                <v-card-subtitle v-if="randomization_report">
+                <v-card-subtitle v-if="schedule_ids.length===1">
                     <p>Randomization order:</p>
-                    <p v-for="r in randomization_report">{{ r }}</p>
+                    <p v-for="r in randomization_reports.get(schedule_ids[0])!">{{ r }}</p>
+                </v-card-subtitle>
+                <v-card-subtitle v-else-if="schedule_ids.length>1">
+                    <template v-for="schedule_id in schedule_ids">
+                        <p>Randomization order for {{ schedule_id }}:</p>
+                        <p v-for="r in randomization_reports.get(schedule_id)!">{{ r }}</p>
+                    </template>
                 </v-card-subtitle>
                 <v-list>
                     <v-list-subheader>Tasks</v-list-subheader>
                     <v-list-item v-for="sr in props.my.results" variant="outlined">
-                        <template v-if="[3,2].includes(sr.quality)">
+                        <template v-if="[3,2,4].includes(sr.quality)">
                             <v-card>
                                 <v-card-title>
                                     {{ sr.stimulus_id }}
                                 </v-card-title>
+                                <v-card-subtitle v-if="schedule_ids.length>1">
+                                    Schedule id: {{ sr.schedule_id }}
+                                </v-card-subtitle>
                                 <v-card-text>
                                     <ViewEma :my="sr"
-                                        :files="stimulus_map!.get(sr.stimulus_id)!"
+                                        :files="stimulus_map.get(sr.schedule_id!)!.get(sr.stimulus_id)!"
                                         v-if="stimuli_map.get(sr.stimulus_id)?.type==='ema'"
                                     />
                                     <ViewRecording :my="sr"
-                                        :files="stimulus_map!.get(sr.stimulus_id)!"
-                                        :transcript="transcripts?.get(sr.stimulus_id)"
+                                        :files="stimulus_map.get(sr.schedule_id!)!.get(sr.stimulus_id)!"
+                                        :transcript="transcripts.get(sr.schedule_id!)!.get(sr.stimulus_id)"
                                         v-else-if="stimuli_map.get(sr.stimulus_id)?.type==='recording'"
                                     />
                                 </v-card-text>
@@ -64,6 +81,16 @@
                                 </v-card-title>
                                 <v-card-text>
                                     Past due
+                                </v-card-text>
+                            </v-card>
+                        </template>
+                        <template v-else-if="sr.quality===99">
+                            <v-card>
+                                <v-card-title>
+                                    {{ sr.stimulus_id }}
+                                </v-card-title>
+                                <v-card-text>
+                                    Sent within the last 2 days but not yet completed
                                 </v-card-text>
                             </v-card>
                         </template>
@@ -88,9 +115,15 @@
                             </v-card>
                         </template>
                     </v-list-item>
+                    <template v-if="schedule_ids.length>1">
+
+                    </template>
+                    <v-list-item v-for="schedule_id in schedule_ids">
+                        <v-btn @click="download_data(schedule_id)" >Download data for {{schedule_id}}</v-btn>
+                    </v-list-item>
                 </v-list>
                 <v-card-actions>
-                    <v-btn @click="download_data()" v-if="schedule_id"/>
+                    <v-btn @click="download_data(schedule_ids[0])" v-if="schedule_ids.length===1">Download data</v-btn>
                     <v-btn @click.stop="close()">Close</v-btn>
                 </v-card-actions>
             </v-card>
@@ -158,9 +191,21 @@ const style = computed(()=>{
             'background-color':'white',
             'border': '2px solid black'
         }
+        case 99 : return {
+            'background-color':'blue',
+            'color': 'white'
+        }
         case 100 : return {
             'background-color':'darkgrey',
             'color':'white'
+        }
+        case 4 : return {
+            'background': `repeating-linear-gradient(
+                            to bottom,
+                            yellow,
+                            red 2em,
+                            red)`,
+            'color':'black'
         }
     }
 })
@@ -193,57 +238,60 @@ const real_timestamp = computed(()=>{
     }
 })
 
-const schedule_id = computed(()=>{
+const schedule_ids = computed(()=>{
+    const retval: Set<string> = new Set()
     for (const sr of props.my.results){
-        if(sr.schedule_id){
-            return sr.schedule_id
+        if (sr.schedule_id){
+            retval.add(sr.schedule_id)
         }
     }
-    return undefined
+    return Array.from(retval)
 })
 
-const file_urls: Ref<string[]|undefined> = ref()
-const transcripts: Ref<Map<string, Transcript>|undefined> = ref()
+const file_urls: Ref<Map<string, string[]>> = ref(new Map())
+const transcripts: Ref<Map<string, Map<string,Transcript>>> = ref(new Map())
 
 
 
 
 watch(details_open, ()=>{
-    if (!file_urls.value){
+    if (file_urls.value.size===0){
         get_visit_files()
     }
 })
 
 function get_visit_files(){
-    if(schedule_id.value){
-        fetch(`/salsa/server/get-visit-files?${new URLSearchParams({schedule_id:schedule_id.value})}`).then( r=>
+    for(const schedule_id of schedule_ids.value){
+        fetch(`/salsa/server/get-visit-files?${new URLSearchParams({schedule_id:schedule_id})}`).then( r=>
         r.json()
         ).then( s=>
-            file_urls.value = s
+            file_urls.value.set(schedule_id, s)
         )
-        fetch(`/salsa/server/get-visit-transcriptions?${new URLSearchParams({schedule_id:schedule_id.value})}`).then( r=>
+        fetch(`/salsa/server/get-visit-transcriptions?${new URLSearchParams({schedule_id:schedule_id})}`).then( r=>
         r.json() as Promise<{stimulus_id:string, transcript:Transcript}[]>
         ).then( s=>
-            transcripts.value = new Map(s.map(({stimulus_id, transcript}) => [stimulus_id, transcript]))
+            transcripts.value.set(schedule_id, new Map(s.map(({stimulus_id, transcript}) => [stimulus_id, transcript])))
         )
     }
 }
 
-const randomization_report: Ref<string[]|undefined> = ref()
+const randomization_reports: Ref<Map<string, string[]>> = ref(new Map())
 
 const stimulus_map = computed(()=>{
-    if(file_urls.value){
-        const retval = new Map<string,string[]>()
-        file_urls.value.forEach( fl =>{
+    const final_retval = new Map<string, Map<string,string[]>>()
+    file_urls.value.forEach((urls, schedule_id) =>{
+        const retval = new Map<string, string[]>()
+        final_retval.set(schedule_id, retval)
+        urls.forEach( fl =>{
             console.log('fl', fl)
             const stimulus_id = fl.split('=').pop()?.split('.')[0]! //extracts stimulus id from url
             if (stimulus_id === 'randomization_report'){
-                fetch(get_src(props.my.results[0].schedule_id!, fl)).then( r=>
+                fetch(get_src(schedule_id, fl)).then( r=>
                     (r.json() as Promise<number[]>)
                 ).then( ns =>{
                     const this_test_prototype_stimids = test_prototypes.value.filter(
                         tp => tp.id===props.my.results[0].test_prototype_id)[0].stimulus_ids
-                    randomization_report.value = ns.map(nss => this_test_prototype_stimids[nss])
+                    randomization_reports.value.set(schedule_id, ns.map(nss => this_test_prototype_stimids[nss]))
                 })
             }
             else if (retval.has(stimulus_id)){
@@ -252,8 +300,8 @@ const stimulus_map = computed(()=>{
                 retval.set(stimulus_id, [fl])
             }
         })
-        return retval
-    }
+    })
+    return final_retval
 })
 
 const parent_span=ref()
@@ -261,12 +309,12 @@ const parent_span=ref()
 const download_url = ref('')
 const download_name = ref('')
 
-async function download_data(){
+async function download_data(schedule_id:string){
     const retval = await(
-        await fetch(`/salsa/server/get-visit-zip${new URLSearchParams({schedule_id:schedule_id.value!})}`)
+        await fetch(`/salsa/server/get-visit-zip?${new URLSearchParams({schedule_id})}`)
     ).blob()
     download_url.value = URL.createObjectURL(retval)
-    download_name.value = `${participant_id.value}|${schedule_id.value}.zip`
+    download_name.value = `${participant_id.value}|${schedule_id}.zip`
     dialog_open.value=true
 }
 
@@ -284,6 +332,9 @@ async function download_data(){
 }
 .j-hovercard{
     width: 600px;
+    height:75vh;
+    overflow-y: scroll;
+
 }
 .j-hiddencard{
     display: none;

@@ -150,50 +150,80 @@
                 View by Participant
             </template>
             <template #content_participants>
-                <v-table>
-                    <thead>
-                        <tr>
-                            <th>Participant id</th>
-                            <th></th>
-                            <th v-for="phase in current_schedule_prototype.phases">
-                                {{ phase.id }}
-                            </th>
-                            <th>
-                                Tests taken outside of schedule
-                            </th>
-                        </tr>
-                    </thead>
+                <v-table class="j-dashboard-table">
                     <tbody>
-                        <tr v-for="[participant_id, visit_data] in participant_data.entries()">
-                            <th 
-                                v-if="participant_has_data(participant_data, participant_id)"
-                                @click="download_participant_data(participant_id)"
-                                class="j-download"
-                            >
-                                {{participant_id}}⬇
-                            </th>
-                            <th 
-                                v-else
-                                class="j-download-empty"
-                            >
-                                {{participant_id}}⬇
-                            </th>
+                        <tr v-for="([phasepoint, filter_participants]) in filter_data">
                             <td>
-                                <j-btn :click="dropout_participant" :arg0="participant_id">
-                                    Dropout participant {{ participant_id }}
-                                </j-btn>
-                            </td>
-                            <td v-for="phase in current_schedule_prototype.phases">
-                                <ViewVisit 
-                                    v-for="visit,i in sort_visits(visit_data.get(phase.id)||[])"
-                                    :my="visit"
-                                />
-                            </td>
-                            <td>
-                                <ViewVisit 
-                                    v-for="visit,i in sort_visits(visit_data.get(-1)||[])"
-                                    :my="visit"
-                                />
+                                <details :open="phasepoint.tag==='active'">
+                                    <summary v-if="phasepoint.tag==='dropout'">
+                                        Dropped out 
+                                    </summary>
+                                    <summary v-else-if="phasepoint.tag==='complete'">
+                                        Completed 
+                                    </summary>
+                                    <summary v-else-if="phasepoint.tag==='active'">
+                                        Currently in phase {{ phasepoint.phase }} 
+                                    </summary>
+                                    <summary v-else-if="phasepoint.tag==='awaiting'">
+                                        Will start phase {{ phasepoint.phase }}  
+                                    </summary>
+                                    <v-table>
+                                        <thead>
+                                            <tr>
+                                                <th>Participant study id</th>
+                                                <th>Login code</th>
+                                                <th>Message Schedule</th>
+                                                <th></th>
+                                                <th v-for="phase in current_schedule_prototype.phases">
+                                                    {{ phase.id }}
+                                                </th>
+                                                <th>
+                                                    Tests taken outside of schedule
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="{startTime:start_time, pid:participant_id, phases:visit_data} in filter_participants">
+                                                <th
+                                                    v-if="participant_has_data(participant_data, participant_id)"
+                                                    @click="download_participant_data(participant_id)"
+                                                    class="j-download"
+                                                >
+                                                    {{dashboard_code_map.get(participant_id)}}⬇
+                                                </th>
+                                                <th
+                                                    v-else
+                                                    class="j-download-empty"
+                                                >
+                                                    {{dashboard_code_map.get(participant_id)}}⬇
+                                                </th>
+                                                <th>
+                                                    {{ participant_id }}
+                                                </th>
+                                                <td>
+                                                    <message-schedule :participant_id="participant_id"/>
+                                                </td>
+                                                <td>
+                                                    <j-btn :click="dropout_participant" :arg0="participant_id">
+                                                        Dropout participant {{ participant_id }}
+                                                    </j-btn>
+                                                </td>
+                                                <td v-for="phase in current_schedule_prototype.phases">
+                                                    <ViewVisit
+                                                        v-for="visit,i in sort_visits(visit_data.get(phase.id)||[])"
+                                                        :my="visit"
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <ViewVisit
+                                                        v-for="visit,i in sort_visits(visit_data.get(-1)||[])"
+                                                        :my="visit"
+                                                    />
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </v-table>
+                                </details>
                             </td>
                         </tr>
                     </tbody>
@@ -222,8 +252,8 @@ import {
     schedule_prototype_list_key, project_key, test_prototypes_key, response_stimuli_key,
     close_all_key
  } from '@/injectkeys'
-import type {SchedulePrototype, ResponseStimulus, TestPrototypeChoice} from '@/types/schedule'
 import ViewVisit from './ViewVisit.vue'
+import MessageSchedule from './MessageSchedule.vue'
 import JTabs from '../JTabs.vue'
 import JBtn from '../JBtn.vue'
 import PhaseHeaders from './PhaseHeaders.vue'
@@ -247,6 +277,7 @@ const current_schedule_prototype = computed(()=>
     schedule_prototypes.value.filter(s => s.schedule_id === current_schedule_prototype_id.value)[0]
 )
 const phase_ids = computed(()=>current_schedule_prototype.value.phases.map(p => p.id))
+const dashboard_code_map: Ref<Map<string, string>> = ref(new Map())
 
 const data: Ref<StimulusResult<'parsed'>[]> = ref([])
 async function get_data(){
@@ -254,6 +285,13 @@ async function get_data(){
     const data_unparsed: StimulusResult<'unparsed'>[]  = (await (await fetch('/salsa/server/api/get-dashboard-data?' + new URLSearchParams({
         project, schedule_prototype_id:current_schedule_prototype.value.schedule_id
     }))).json()) 
+    const participants: {id:string, dashboard_code:string}[] = (await (await fetch('/salsa/server/api/get-participants?' + new URLSearchParams({
+        project
+    }))).json()) 
+    dashboard_code_map.value = new Map()
+    for (const p of participants){
+        dashboard_code_map.value.set(p.id, p.dashboard_code)
+    }
     console.log('dunparsed', data_unparsed)
     data.value = data_unparsed.map(dr => ({
         ...dr,
@@ -310,6 +348,8 @@ const visit_stats = computed(()=>
 )
 const visit_counts = computed(()=>visit_stats.value[0])
 const participant_data = computed(()=>visit_stats.value[1])
+const filter_data = computed(()=>visit_stats.value[2])
+
 const td_span = computed(()=>visit_counts.value.all_stimuli.phases.size + 2)
 
 
