@@ -254,7 +254,6 @@ async def add_participant(r:Request, id:str, project:str, phone_number:str, sche
         timezone=timezone)
     db.add(participant)
     await db.commit()
-    await update_users()
 
 @app.patch('/salsa/server/api/drop-participant')
 async def delete_participant(id:str, db:AsyncSession=Depends(get_db)):
