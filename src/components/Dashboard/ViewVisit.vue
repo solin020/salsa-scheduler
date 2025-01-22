@@ -84,13 +84,23 @@
                                 </v-card-text>
                             </v-card>
                         </template>
-                        <template v-else-if="sr.quality===99">
+                        <template v-else-if="sr.quality===98">
                             <v-card>
                                 <v-card-title>
                                     {{ sr.stimulus_id }}
                                 </v-card-title>
                                 <v-card-text>
                                     Sent within the last 2 days but not yet completed
+                                </v-card-text>
+                            </v-card>
+                        </template>
+                        <template v-else-if="sr.quality===99">
+                            <v-card>
+                                <v-card-title>
+                                    {{ sr.stimulus_id }}
+                                </v-card-title>
+                                <v-card-text>
+                                    About to be sent within the next two days
                                 </v-card-text>
                             </v-card>
                         </template>
@@ -190,6 +200,10 @@ const style = computed(()=>{
         case 0 : return {
             'background-color':'white',
             'border': '2px solid black'
+        }
+        case 98 : return {
+            'background-color':'lightblue',
+            'color': 'black'
         }
         case 99 : return {
             'background-color':'blue',

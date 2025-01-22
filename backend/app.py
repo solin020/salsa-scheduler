@@ -7,7 +7,7 @@ from twilio.rest import Client
 from database import (Admin, Coordinator, Annotator, Participant, 
     MessageSchedule, StimulusResult, TestPrototype, Transcription,
     get_db, update_users, SchedulePrototype, AllGroups, VisitResult,
-    TwilioInfo, MessageView)
+    TwilioInfo, MessageView, DownloadResult)
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select, text
 from datetime import datetime, timezone
@@ -357,7 +357,7 @@ async def get_message_response_files(project: str, schedule_id: str, stimulus_id
 
 @app.get('/salsa/server/get-project-zip')
 async def get_project_zip(project: str, db:AsyncSession=Depends(get_db)) -> Response:
-    mrs = (await db.exec(select(StimulusResult).where(StimulusResult.project==project))).all()
+    mrs = (await db.exec(select(DownloadResult).where(DownloadResult.project==project))).all()
     fnames = set()
     for mr in mrs:
         if not mr.schedule_id: continue
@@ -373,10 +373,10 @@ async def get_project_zip(project: str, db:AsyncSession=Depends(get_db)) -> Resp
 @app.get('/salsa/server/get-study-zip')
 async def get_study_zip(project: str, schedule_prototype_id:str, db:AsyncSession=Depends(get_db)) -> Response:
     mrs = (await db.exec(
-        select(StimulusResult).where(
-                StimulusResult.project==project
+        select(DownloadResult).where(
+                DownloadResult.project==project
             ).where(
-                StimulusResult.schedule_prototype_id==schedule_prototype_id
+                DownloadResult.schedule_prototype_id==schedule_prototype_id
             ))).all()
     fnames = set()
     for mr in mrs:
@@ -395,7 +395,7 @@ async def get_study_zip(project: str, schedule_prototype_id:str, db:AsyncSession
 
 @app.get('/salsa/server/get-participant-zip')
 async def get_participant_zip(participant_id: str, db:AsyncSession=Depends(get_db)) -> Response:
-    mrs = (await db.exec(select(StimulusResult).where(StimulusResult.participant_id==participant_id))).all()
+    mrs = (await db.exec(select(DownloadResult).where(DownloadResult.participant_id==participant_id))).all()
     fnames = set()
     for mr in mrs:
         if not mr.schedule_id: continue
@@ -412,7 +412,7 @@ async def get_participant_zip(participant_id: str, db:AsyncSession=Depends(get_d
 
 @app.get('/salsa/server/get-visit-zip')
 async def get_visit_zip(schedule_id: str, db:AsyncSession=Depends(get_db)) -> list[str]:
-    mrs = (await db.exec(select(StimulusResult).where(StimulusResult.schedule_id==schedule_id))).all()
+    mrs = (await db.exec(select(DownloadResult).where(DownloadResult.schedule_id==schedule_id))).all()
     mr_directory = get_visit_dir_path(mrs[0].project, mrs[0].schedule_id)
     fnames = set()
     for mr in mrs:
@@ -711,6 +711,13 @@ async def get_messages(participant_id:str,  db:AsyncSession=Depends(get_db)):
 @app.post('/salsa/server/api/update-timezone')
 async def update_timezone(participant_id:str, timezone:str,  db:AsyncSession=Depends(get_db)):
     await db.exec(text(f"CALL update_timezone('{participant_id}', '{timezone}')"))
+    await db.commit()
+
+@app.post('/salsa/server/api/update-dashboard-code')
+async def update_dashboard_code(participant_id:str, dashboard_code:str, db:AsyncSession=Depends(get_db)):
+    participant = (await db.exec(select(Participant).where(Participant.id==participant_id))).one()
+    participant.dashboard_code = dashboard_code
+    db.add(participant)
     await db.commit()
 
 

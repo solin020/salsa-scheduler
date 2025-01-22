@@ -126,6 +126,21 @@ class VisitResult(SQLModel, table=True):
     quality: str
     schedule_prototype_id: str
 
+@dataclass
+class DownloadResult(SQLModel, table=True):
+    __tablename__ = "download_result"
+    project: str
+    schedule_id: str = Field(primary_key=True)
+    participant_id: str = Field(primary_key=True)
+    formal_timestamp: datetime = Field(sa_column=Column(sqlalchemy.types.DateTime(timezone=True)))
+    real_timestamp: datetime = Field(sa_column=Column(sqlalchemy.types.DateTime(timezone=True)))
+    miscellaneous: dict = Field(sa_column=Column(JSON), default={})
+    test_prototype_id: str = Field(primary_key=True)
+    stimulus_id: str = Field(primary_key=True)
+    sequence_no: int = Field(primary_key=True)
+    quality: str
+    schedule_prototype_id: str
+
 
 
 

@@ -3,7 +3,10 @@ export enum Quality {
     COMPLETE=1,
     PARTIAL=2,
     INCOMPLETE=3,
-    DROPPED=100
+    DROPPED=100,
+    OPEN=99,
+    DUPLICATE=4,
+    PASTOPEN=98,
 }
 
 type Result = {
@@ -226,6 +229,6 @@ export type StimulusResult<T extends 'parsed'|'unparsed'> = {
 export type Visit = {
     phase: string | -1
     results: StimulusResult<'parsed'>[]
-    quality?: 0|1|2|3|100
+    quality?: 0|1|2|3|100|99|4|98
     sequence_no:number
 }

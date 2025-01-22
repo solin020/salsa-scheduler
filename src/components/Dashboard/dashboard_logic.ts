@@ -71,9 +71,13 @@ class QualitySet {
             this.dropout ++ 
         } else if (sr.quality === 99){
             this.future ++
+            this.open++
+        } else if (sr.quality === 98){
+            this.future ++
+            this.open++
         }
     }
-    insert_visit(results: StimulusResult<'parsed'>[]):(0|1|2|3|100|99|4){
+    insert_visit(results: StimulusResult<'parsed'>[]):(0|1|2|3|100|99|4|98){
         results
         if (results.every(sr => sr.quality===3)){
             this.good_quality++
@@ -95,6 +99,11 @@ class QualitySet {
             this.future++
             this.open++
             return 99
+        }
+        else if (results.some(sr => sr.quality===98)) {
+            this.future++
+            this.open++
+            return 98
         }
         else {
             this.future++
@@ -158,7 +167,7 @@ type VisitStats = {
     by_default_stim_type:Map<string, QualitySet>
 }
 
-type ParticipantPhase = {
+export type ParticipantPhase = {
     tag:'dropout'
 } | {
     tag: 'awaiting'
@@ -170,7 +179,7 @@ type ParticipantPhase = {
     tag: 'complete'
 }
 type ParticipantPhaseMap = Map<string, ParticipantPhase>
-function participantPhaseEquals(pp1:ParticipantPhase, pp2:ParticipantPhase):boolean{
+export function participantPhaseEquals(pp1:ParticipantPhase, pp2:ParticipantPhase):boolean{
     if (pp1.tag === 'dropout' || pp1.tag === 'complete'){
         return pp1.tag === pp2.tag
     } else if (pp1.tag === 'active' || pp1.tag === 'awaiting'){
@@ -198,7 +207,16 @@ type FilterableParticipantScheduleStructure = [ParticipantPhase, {
     pid:string,
     phases: Map<string | -1, Visit[]>
 }[]][]
-function get_participant_phases(pss: ParticipantScheduleStructure):FilterableParticipantScheduleStructure{
+type ParticipantsWithFilterProperties = [{
+    phase:ParticipantPhase,
+    quality: QualitySet
+},{
+    startTime: Date, 
+    pid:string,
+    phases: Map<string | -1, Visit[]>
+}][]
+
+function get_participant_phases(pss: ParticipantScheduleStructure):ParticipantsWithFilterProperties{
     const now = new Date()
     const participantPhaseMap = new Map<string, [Date, ParticipantPhase]>()
     const allParticipantsAndPhases:FilterableParticipantScheduleStructure= []
@@ -281,10 +299,27 @@ function get_participant_phases(pss: ParticipantScheduleStructure):FilterablePar
             }
         }
     }
+    const sortedParticipants: ParticipantsWithFilterProperties = []
     for (const [phasepoint_r, participants] of allParticipantsAndPhases){
-        participants.sort((a,b) => (a.startTime < b.startTime)?1:0)
+        for (const par of participants){
+            sortedParticipants.push([{
+                phase:phasepoint_r,
+                quality:((()=>{
+                    const qs = new QualitySet()
+                    for (const [phase, visits] of par.phases.entries()){
+                        //ignore self submits in stats
+                        if (typeof phase === 'string'){
+                            type zz = typeof visits[number]['quality']
+                            visits.forEach(v => qs.insert_visit(v.results))
+                        }
+                    }
+                    return qs
+                })())
+            },par])
+        }
     }
-    return allParticipantsAndPhases
+    sortedParticipants.sort((a,b) => (a[1].startTime < b[1].startTime)?1:0)
+    return sortedParticipants
 }
 
 
@@ -294,7 +329,7 @@ export function count_visits(
         expected_stimuli:ResponseStimulus[], 
         expected_default_stimuli:ResponseStimulus[],
         schedule_prototype: SchedulePrototype<'database'>
-    ):[VisitStats, ParticipantScheduleStructure, FilterableParticipantScheduleStructure]{
+    ):[VisitStats, ParticipantScheduleStructure, ParticipantsWithFilterProperties]{
 
     const now =  new Date()
     const visit_map: Map<string, {phase:string|-1, results:typeof data}> = new Map()

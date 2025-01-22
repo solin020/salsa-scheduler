@@ -4,15 +4,20 @@
         :style="{
             'background-color':'white',
             'border': '2px solid black',
-            'font-size': '24pt'
+            'font-size': '12pt'
         }">
-        🕰️
+        📝
             <v-overlay
                 location-strategy="static"
                 activator="parent"
                 v-model="details_open"
             >
                 <v-card class="j-schedulecard">
+                        <v-card-title>Login code: {{ props.participant_id }} Study code: {{props.dashboard_code}}</v-card-title>
+                        <details><summary>Edit participant's study code?</summary>
+                            <v-input v-model="new_dashboard_code"></v-input>
+                            <j-btn :click="update_dashboard_code" :arg0="null">Update study code</j-btn>
+                        </details>
                         <v-card-title>Text Message Schedule for {{ props.participant_id }}</v-card-title>
                         <v-card-title>Current Timezone: {{tz_dict.get(old_timezone!) }}</v-card-title>
                         <v-card-subtitle>
@@ -83,17 +88,25 @@ type MessageScheduleInfo = {
 const props = defineProps<
     {
         participant_id:string
+        dashboard_code:string
     }
 >()
 
 
 
-const messages: Ref<Message[]> = ref([])
-const timezone: Ref<Timezone> = ref("America/Los_Angeles")
+const messages = ref<Message[]>([])
+const timezone  = ref<Timezone>("America/Los_Angeles")
 const old_timezone: Ref<Timezone|null> = ref(null)
+const new_dashboard_code = ref(props.dashboard_code)
 const details_open = ref(false)
 
-
+async function update_dashboard_code(arg0:null){
+    const fetchval = fetch('/salsa/server/api/update-dashboard-code?' + new URLSearchParams({
+        participant_id:props.participant_id,
+        dashboard_code:new_dashboard_code.value
+    }), {method:'POST'})
+    return fetchval
+}
 
 async function get_message_schedule(){
     const s: MessageScheduleInfo = await (await 

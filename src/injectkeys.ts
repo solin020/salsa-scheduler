@@ -28,4 +28,6 @@ export const sim_test_prototype_id_key = Symbol() as InjectionKey<string>
 export const pinia_key = Symbol() as InjectionKey<any>
 export const response_stimuli_key = Symbol() as InjectionKey<Ref<Map<string, ResponseStimulus>>>
 export const close_all_key = Symbol() as InjectionKey<Ref<boolean>>
+export const phase_ids_key = Symbol() as InjectionKey<Ref<string[]>>
+export const unique_stimuli_key = Symbol() as InjectionKey<Ref<ResponseStimulus[]>>
 
