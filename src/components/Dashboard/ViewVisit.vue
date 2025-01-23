@@ -161,6 +161,7 @@ import { get_src } from './dashboard_logic';
 
 interface Props{
     my:Visit
+    overridestyle?:any
 }
 
 const props = defineProps<Props>()
@@ -184,6 +185,9 @@ function close(){
 }
 
 const style = computed(()=>{
+    if(props.overridestyle){
+        return props.overridestyle
+    }
     switch(props.my.quality!){
         case 3 : return {
             'background-color':'seagreen',

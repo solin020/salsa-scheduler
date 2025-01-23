@@ -19,20 +19,32 @@
                     </v-card-subtitle>
                     <v-table class="j-dashboard-table">
                         <thead>
-                            <th>Stimulus</th>
-                            <th v-for="pid in phase_ids">{{ pid }}</th>
+                            <th class="j-ptheader">Stimulus</th>
+                            <th class="j-ptheader" v-for="pid in phase_ids">{{ pid }}</th>
+                            <th class="j-ptheader">Self-initiated</th>
                         </thead>
                         <tbody>
-                            <tr v-for="us in unique_stimuli">
-                                <td>{{ us.id }}: </td>
+                            <tr v-for="us in all_stimuli.keys()">
+                                <td>{{ us }}: </td>
                                 <td v-for="pid in phase_ids">
                                     <template v-for="visit in sort_visits(visit_data.get(pid)!)">
-                                        <span
+                                        <view-visit
+                                        :my="visit"
                                         class="j-dot" 
-                                        :style="calculate_style(us.id, visit.results)"
+                                        :overridestyle="calculate_style(us, visit.results)"
 
-                                        >{{visit.sequence_no}}</span>
+                                        >{{visit.sequence_no}}</view-visit>
                                     </template>
+                                </td>
+                                <td>
+                                    <template v-for="visit in sort_visits(visit_data.get(-1)!)">
+                                        <view-visit
+                                        :my="visit"
+                                        class="j-dot" 
+                                        :overridestyle="calculate_style(us, visit.results)"
+
+                                        >{{visit.sequence_no}}</view-visit>
+                                    </template>     
                                 </td>
                             </tr>
                         </tbody>
@@ -43,8 +55,9 @@
 </template>
 <script setup lang="ts">
 import {ref, inject} from 'vue'
-import { unique_stimuli_key, phase_ids_key } from '@/injectkeys'
+import { response_stimuli_key, phase_ids_key } from '@/injectkeys'
 import type { Visit } from '@/types/schedule'
+import ViewVisit from './ViewVisit.vue'
 const details_open = ref(false)
 const props = defineProps<{
     participant_id:string
@@ -53,7 +66,7 @@ const props = defineProps<{
 function close(){
     details_open.value=false
 }
-const unique_stimuli = inject(unique_stimuli_key)!
+const all_stimuli = inject(response_stimuli_key)!
 const phase_ids = inject(phase_ids_key)!
 function sort_visits(vv:Visit[]){
     return vv.sort((v1,v2) => v1.sequence_no - v2.sequence_no)
@@ -71,8 +84,7 @@ function calculate_style(us:string, results: Visit['results']){
         }
     } else if (res.length<1){
         return {
-            'background-color':'darkgrey',
-            'color':'white'
+            'display':'hidden'
         }
     } else{
         switch(res[0].quality){
@@ -118,3 +130,8 @@ function calculate_style(us:string, results: Visit['results']){
 }
 
 </script>
+<style>
+.j-ptheader{
+    text-align:left;
+}
+</style>

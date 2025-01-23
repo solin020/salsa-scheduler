@@ -213,13 +213,12 @@
                                 <tr v-for="[filter_info, {startTime:start_time, pid:participant_id, phases:visit_data}] in filtered_participants">
                                     <th>
                                         {{dashboard_code_map.get(participant_id)}}
-                                          
+                                        <participant-overview :participant_id="participant_id" :visit_data="visit_data"/>
                                         <span  
                                         v-if="participant_has_data(participant_data, participant_id)"
                                          @click="download_participant_data(participant_id)">
                                          &nbsp;&nbsp; ⬇️&nbsp;&nbsp; 
                                         </span>
-                                        <participant-overview :participant_id="participant_id" :visit_data="visit_data"/>
                                     </th>
                                     <th>
                                         {{ participant_id }}
@@ -271,7 +270,7 @@
 import {inject, ref, type Ref, computed, watch, provide} from 'vue'
 import { 
     schedule_prototype_list_key, project_key, test_prototypes_key, response_stimuli_key,
-    close_all_key, phase_ids_key, unique_stimuli_key
+    close_all_key, phase_ids_key
  } from '@/injectkeys'
 import ViewVisit from './ViewVisit.vue'
 import MessageSchedule from './MessageSchedule.vue'
@@ -336,7 +335,6 @@ watch(current_schedule_prototype, ()=>{
 const unique_stimuli = computed(()=>
     get_unique_stimuli(test_prototypes.value, current_schedule_prototype.value)
 )
-provide(unique_stimuli_key, unique_stimuli)
 
 
 

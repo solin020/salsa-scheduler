@@ -126,31 +126,31 @@ class QualitySet {
         return this.finished / this.expected
     }
     get fraction_good(){
-        return this.good_quality / this.expected
+        return this.good_quality / (this.expected||Infinity)
     }
     get fraction_bad(){
-        return this.low_quality / this.expected
+        return this.low_quality / (this.expected||Infinity)
     }
     get fraction_missed(){
-        return this.missed / this.expected
+        return this.missed / (this.expected||Infinity)
     }
     get fraction_future(){
-        return this.future / this.expected
+        return this.future / (this.expected||Infinity)
     }
     get fraction_dropout(){
-        return this.dropout / this.expected
+        return this.dropout / (this.expected||Infinity)
     }
     get fraction_finished_future(){
-        return this.finished / this.future_expected
+        return this.finished / (this.future_expected||Infinity)
     }
     get fraction_good_future(){
-        return this.good_quality / this.future_expected
+        return this.good_quality / (this.future_expected||Infinity)
     }
     get fraction_finished_all(){
-        return this.finished / this.future_all
+        return this.finished / (this.future_all||Infinity)
     }
     get fraction_good_all(){
-        return this.good_quality / this.future_all
+        return this.good_quality / (this.future_all||Infinity)
     }
     
 }
