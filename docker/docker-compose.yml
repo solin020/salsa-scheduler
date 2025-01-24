@@ -1,0 +1,83 @@
+services:
+    whisperx:
+      image: salsa-whisperx
+      working_dir: /app
+      entrypoint: /bin/bash -c "whisperx"
+    backend:
+      image: salsa-scheduler
+      command: bash -c "cd /app/salsa-scheduler/backend; uvicorn app:app --port 80 --host 0.0.0.0 --reload"
+      volumes:
+        - type: bind
+          source: /home/solin020/salsa-scheduler/access-control
+          target: /access-control
+        - type: bind
+          source: /home/solin020/salsa-scheduler/mounts/backend-code
+          target: /app/salsa-scheduler
+        - type: bind
+          source: /home/solin020/salsa-scheduler/mounts/uploads
+          target: /app/uploads
+      secrets:
+        - pythondotenv
+      env_file:
+        - /home/solin020/salsa-scheduler/secret/.env2
+    database:
+      image: salsa-scheduler-db
+      environment:
+        - POSTGRES_PASSWORD=password
+      volumes:
+        - type: bind
+          source: /home/solin020/salsa-scheduler/data
+          target: /var/lib/postgresql/data
+        - type: bind
+          source: /home/solin020/salsa-scheduler/access-control
+          target: /access-control
+    gateway:
+      image: salsa-scheduler-apache2
+      command: bash /loop.sh
+      environment:
+        - MYSITE=https://henry.ahc.umn.edu
+      ports:
+        - "8123:8123"
+        - "8444:8444"
+      secrets:
+        - spcert
+        - spkey
+        - spencryptcert
+        - spencryptkey
+        - spsigningcert
+        - spsigningkey
+        - shibboleth2xml
+        - httpscert
+        - httpskey
+      volumes:
+        - type: bind
+          source: /home/solin020/salsa-scheduler/access-control
+          target: /access-control
+        - type: bind
+          source: /home/solin020/salsa-scheduler/mounts/apache2-config
+          target: /etc/apache2
+
+volumes:
+  access-control:
+
+secrets:
+  spcert:
+    file: /home/solin020/salsa-scheduler/secret/sp-cert.pem
+  spkey:
+    file: /home/solin020/salsa-scheduler/secret/sp-key.pem
+  spencryptcert:
+    file: /home/solin020/salsa-scheduler/secret/sp-encrypt-cert.pem
+  spencryptkey:
+    file: /home/solin020/salsa-scheduler/secret/sp-encrypt-key.pem
+  spsigningcert:
+    file: /home/solin020/salsa-scheduler/secret/sp-signing-cert.pem
+  spsigningkey:
+    file: /home/solin020/salsa-scheduler/secret/sp-signing-key.pem
+  shibboleth2xml:
+    file: /home/solin020/salsa-scheduler/secret/shibboleth2.xml
+  httpscert:
+    file: /home/solin020/salsa-scheduler/secret/henry.ahc.umn.edu.crt
+  httpskey:
+    file: /home/solin020/salsa-scheduler/secret/henry.ahc.umn.edu.key
+  pythondotenv:
+    file: /home/solin020/salsa-scheduler/secret/.env

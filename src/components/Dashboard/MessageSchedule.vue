@@ -12,56 +12,72 @@
                 activator="parent"
                 v-model="details_open"
             >
-                <v-card class="j-schedulecard">
-                        <v-card-title>Login code: {{ props.participant_id }} Study code: {{props.dashboard_code}}</v-card-title>
-                        <details><summary>Edit participant's study code?</summary>
-                            <v-input v-model="new_dashboard_code"></v-input>
-                            <j-btn :click="update_dashboard_code" :arg0="null">Update study code</j-btn>
-                        </details>
-                        <v-card-title>Text Message Schedule for {{ props.participant_id }}</v-card-title>
-                        <v-card-title>Current Timezone: {{tz_dict.get(old_timezone!) }}</v-card-title>
-                        <v-card-subtitle>
-                            New Timezone: <timezone-selector
-                                style="width: 30vw;"
-                                v-model="timezone"/>
-                        </v-card-subtitle>
-                        <v-card-subtitle>
-                            <j-btn :click="update_timezone" :arg0="undefined">Update Participant Timezone</j-btn>
-                            <v-btn @click.stop="close()">Close</v-btn>
-                        </v-card-subtitle>
-                        <v-list>
-                            <v-table>
-                                <thead>
-                                    <tr>
-                                        <th>Intended clock time on device</th>
-                                        <th>Time the message will be sent in Universal Time (Greenwich mean)</th>
-                                        <th>Message</th>
-                                        <th>Message send condition</th>
-                                        <th>Already sent?</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="message in messages">
-                                        <td>
-                                            {{new Date(message.their_time).toLocaleString()}}
-                                        </td>
-                                        <td>
-                                            {{ new Date(message.utc_time).toLocaleString() }}
-                                        </td>
-                                        <td>
-                                            {{message.message}}
-                                        </td>
-                                        <td>
-                                            {{message.condition}}
-                                        </td>
-                                        <td>
-                                            {{message.sent}}
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </v-table>
-                        </v-list>
-                </v-card>
+            <v-btn @click.stop="close()">Close</v-btn>
+            <v-expansion-panels>
+                <v-expansion-panel title="Edit participant's study code?">
+                    <v-expansion-panel-text>
+                        <v-card class="j-schedulecard">
+                            <v-card-title>Login code: {{ props.participant_id }} Study code: {{props.dashboard_code}}</v-card-title>
+                            <v-list>
+                                <v-list-item>
+                                    <v-text-field v-model="new_dashboard_code" label="New study code"/>
+                                </v-list-item>
+                                <v-list-item>
+                                    <j-btn :click="update_dashboard_code" :arg0="null">Update study code</j-btn>
+                                </v-list-item>
+                            </v-list>
+                        </v-card>
+                    </v-expansion-panel-text>
+                </v-expansion-panel>
+                <v-expansion-panel title="Edit participant's timezone?">
+                        <v-expansion-panel-text>
+                            <v-card class="j-schedulecard">
+                                    <v-card-title>Text Message Schedule for {{ props.participant_id }}</v-card-title>
+                                    <v-card-title>Current Timezone: {{tz_dict.get(old_timezone!) }}</v-card-title>
+                                    <v-card-subtitle>
+                                        New Timezone: <timezone-selector
+                                            style="width: 30vw;"
+                                            v-model="timezone"/>
+                                    </v-card-subtitle>
+                                    <v-card-subtitle>
+                                        <j-btn :click="update_timezone" :arg0="undefined">Update Participant Timezone</j-btn>
+                                    </v-card-subtitle>
+                                    <v-list>
+                                        <v-table>
+                                            <thead>
+                                                <tr>
+                                                    <th>Intended clock time on device</th>
+                                                    <th>Time the message will be sent in Universal Time (Greenwich mean)</th>
+                                                    <th>Message</th>
+                                                    <th>Message send condition</th>
+                                                    <th>Already sent?</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr v-for="message in messages">
+                                                    <td>
+                                                        {{new Date(message.their_time).toLocaleString()}}
+                                                    </td>
+                                                    <td>
+                                                        {{ new Date(message.utc_time).toLocaleString() }}
+                                                    </td>
+                                                    <td>
+                                                        {{message.message}}
+                                                    </td>
+                                                    <td>
+                                                        {{message.condition}}
+                                                    </td>
+                                                    <td>
+                                                        {{message.sent}}
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </v-table>
+                                    </v-list>
+                            </v-card>
+                        </v-expansion-panel-text>
+                    </v-expansion-panel>
+            </v-expansion-panels>
             </v-overlay>
     </span>
 </template>
