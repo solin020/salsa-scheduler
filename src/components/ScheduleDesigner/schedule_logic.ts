@@ -223,7 +223,8 @@ export function prepare_schedule_for_upload(
                                     ) ? 
                                     (([hour, minute])=>({type:'fixed', hour, minute})
                                         )((console.log('what???'),entry_timing_generator())) : 
-                                    e.timing
+                                    e.timing,
+                                    associated_messages:e.associated_messages,
                                 }
                             }
                         )
@@ -259,6 +260,7 @@ export function prepare_schedule_for_participant(
         twilio_info:undefined,
         prototype_selection:undefined,
         default_selection:ws.default_selection,
+        associated_messages:ws.associated_messages,
         timing:undefined,
         phases: ws.phases.map(
             p => {
@@ -272,6 +274,7 @@ export function prepare_schedule_for_participant(
                 return {
                     id:p.id,
                     prototype_selection: undefined,
+                    associated_messages:p.associated_messages,
                     spec: {
                         cadence: p.spec.cadence,
                         timing:undefined,
@@ -347,6 +350,7 @@ export function prepare_schedule_for_participant(
                                     //and are unique for every patient
                                     prototype_selection,
                                     response_stimuli,
+                                    associated_messages:e.associated_messages,
                                     sequence_no: e.sequence_no
                                 }
                             }

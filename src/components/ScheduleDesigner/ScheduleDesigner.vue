@@ -36,6 +36,10 @@
                         :my="my"
                         :parent_schedule="undefined"
                     />
+                    <message
+                        level="base"
+                        :my="my.associated_messages"
+                    />
                     <br/>
                     <span class="j-tooltip">
                                         ⓘ
@@ -139,6 +143,10 @@
                                             :parent_phase="phase"
                                             :parent_schedule="my"
                                         />
+                                        <message
+                                            level="entry"
+                                            :my="phase.spec.tests[idx].associated_messages"
+                                        />
                                 </template>
                                 <template #postamble>
                                     <v-card>
@@ -158,6 +166,10 @@
                                                     :my="phase.spec"
                                                     :parent_schedule="my"
                                                 />
+                                            <message
+                                                level="phase"
+                                                :my="phase.associated_messages"
+                                            />
                                         </v-card-text>
                                     </v-card>
                                     <v-btn @click="add_test(phase.spec)">Add a new testdate</v-btn>
@@ -166,7 +178,7 @@
                                     </div>
                                 </template>
                             </j-list>
-                        </div>
+                        </div> 
                     </div>
                 </template>
                 <template #postamble>
@@ -232,6 +244,7 @@ import type {PhaseSpec, SchedulePrototype} from 'src/types/schedule'
 import {VNumberInput} from 'vuetify/labs/components'
 import {DatePicker } from 'v-calendar'
 import PrototypeSelection from './PrototypeSelection.vue'
+import Message from './Message.vue'
 import TimingSelection from './TimingSelection.vue'
 import {ref, type Ref, computed, inject} from 'vue'
 import { prepare_schedule_for_participant,
@@ -270,7 +283,8 @@ const my: Ref<SchedulePrototype<'website'>> = ref({
     allow_unscheduled:true,
     default_results:undefined,
     prototype_selection:undefined,
-    participant_id:undefined
+    participant_id:undefined,
+    associated_messages:{type:'none'}
 })
 
 
@@ -342,7 +356,8 @@ function add_test(spec: PhaseSpec<'website'>){
                 },
                 timing: {...t.timing},
                 prototype_selection:{...t.prototype_selection},
-                sequence_no:undefined
+                sequence_no:undefined,
+                associated_messages:{type:'inherit'}
             })
         }else{
             spec.tests.push({
@@ -354,7 +369,8 @@ function add_test(spec: PhaseSpec<'website'>){
                     type:'inherit'
                 },
                 prototype_selection:{type:'inherit'},
-                sequence_no:undefined
+                sequence_no:undefined,
+                associated_messages:{type:'inherit'}
             })
         }
     } else if (spec.cadence === 'weekly'){
@@ -367,7 +383,9 @@ function add_test(spec: PhaseSpec<'website'>){
                 },
                 prototype_selection:{...t.prototype_selection},
                 timing: {...t.timing},
-                sequence_no:undefined
+                sequence_no:undefined,
+                associated_messages:{type:'inherit'}
+
             })
         }else{
             spec.tests.push({
@@ -379,7 +397,9 @@ function add_test(spec: PhaseSpec<'website'>){
                     type:'inherit'            
                 },
                 prototype_selection:{type:'inherit'},
-                sequence_no:undefined
+                sequence_no:undefined,
+                associated_messages:{type:'inherit'}
+
             })
         }
     }
@@ -390,6 +410,7 @@ function add_phase(){
     my.value.phases.push({
         id: `phase_${unique_id.next().value}`,
         prototype_selection:undefined,
+        associated_messages:{type:'inherit'},
         spec: {
             cadence: phase_schedule_type.value,
             tests:[]

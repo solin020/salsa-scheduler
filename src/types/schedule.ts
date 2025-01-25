@@ -127,6 +127,7 @@ export type PhaseSpec<Location extends ScheduleLocation> = Location extends ("we
                 } 
             timing: Timing<Location, 'entry'>
             sequence_no: Location extends 'website'? undefined: number 
+            associated_messages: AssociatedMessages<'entry'>
             prototype_selection:TestPrototypeChoice<Location, 'entry'>
         }[]
     }
@@ -141,6 +142,7 @@ export type PhaseSpec<Location extends ScheduleLocation> = Location extends ("we
                 } 
             timing: Timing<Location, 'entry'>
             sequence_no: Location extends 'website'? undefined: number 
+            associated_messages: AssociatedMessages<'entry'>
             prototype_selection:TestPrototypeChoice<Location, 'entry'>
         }[]
     }
@@ -165,6 +167,7 @@ export type SchedulePrototype<Location extends ScheduleLocation> = {
     participant_timezone: Location extends ("device"|"result") ? Timezone : undefined
     participant_id: Location extends ("device"|"result") ? string : undefined
     timing?:Timing<Location, 'base'>
+    associated_messages: AssociatedMessages<'base'> 
     prototype_selection: TestPrototypeChoice<Location, 'base'>
     default_results: Location extends ("result") ? Result[] : undefined
     default_selection?: DefaultTestPrototypeChoice<Location>
@@ -173,21 +176,8 @@ export type SchedulePrototype<Location extends ScheduleLocation> = {
     {
         id:string
         spec:PhaseSpec<Location>
-        reminder_message?:string
-        reminder_message_hour?:number
-        reminder_message_minute?:number
-        start_message?:string
-        nudge_message?:string
-        nudge_message_hour?:number
-        nudge_message_minute?:number
-        ty1_message?:string
-        ty1_message_hour?:number
-        ty1_message_minute?:number
-        ty2_message?:string
-        ty2_message_hour?:number
-        ty2_message_minute?:number
-
         prototype_selection: TestPrototypeChoice<Location, 'phase'>
+        associated_messages: AssociatedMessages<'phase'> 
     }[]
 }
     
@@ -232,3 +222,24 @@ export type Visit = {
     quality?: 0|1|2|3|100|99|4|98
     sequence_no:number
 }
+
+export type Interval = {
+    count:number
+    unit:(
+        'minutes'|
+        'hours'|
+        'days'
+    )
+}
+export type AssociatedMessages<Level extends ('entry'|'phase'|'base')> = {
+    type:'fixed',
+    messages : {
+        interval:Interval,
+        message:string,
+        condition:('complete' | 'incomplete' | 'unconditional')
+    }[]
+} | {
+    type:'none'
+} | (Level extends 'base'? never:{
+    type:'inherit'
+} )
