@@ -53,6 +53,11 @@ android {
   }
   }
 
+
+go into android directory and use ./gradlew --contune build to build not capacitor.
+Ignore the failed capacitor tests, the plugins are garbage and out of date.
  
+
+
 get onto device with adb install app-release.apk
 

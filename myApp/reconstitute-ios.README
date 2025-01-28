@@ -3,9 +3,14 @@ sshfs attach myApp so that you can open in xcode
 sshfs solin020@firefly.ahc.umn.edu:salsa3/salsa-scheduler/myApp ~/programming/myApp
 
 npm install in myApp
+
+npm build
+
 modify ios/App/Podfile with line: project './App.xcodeproj'
 
 npx cap sync ios
+
+run pod install on mac (not on linux server)
 
 build in xcode
 
