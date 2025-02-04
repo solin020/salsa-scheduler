@@ -537,10 +537,10 @@ async def coordinator_get_schedule_csv(project:str, schedule_prototype_id:str, d
                     response_stimuli_headers[m['id']] = set()
 
     mrs = (await db.exec(
-        select(StimulusResult).where(
-            StimulusResult.project==project
+        select(DownloadResult).where(
+            DownloadResult.project==project
         ).where(
-            StimulusResult.schedule_prototype_id==schedule_prototype_id
+            DownloadResult.schedule_prototype_id==schedule_prototype_id
         ))).all()
     participants = [p for p in list((await db.exec(
         select(Participant).where(
