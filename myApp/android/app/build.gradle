@@ -1,14 +1,20 @@
 apply plugin: 'com.android.application'
+def signingProperties = new Properties()
+def signingPropertiesFile = file(System.getProperty("user.home") + "/.android/salsa-signing.properties")
+
+if (signingPropertiesFile.exists()) {
+    signingProperties.load(new FileInputStream(signingPropertiesFile))
+}
 
 android {
     namespace "io.ionic.starter"
-    compileSdk 34
+    compileSdk 36
     defaultConfig {
         applicationId "edu.umn.salsa"
         minSdkVersion 22
-        targetSdkVersion 34
-        versionCode 2015
-        versionName "2.0.15"
+        targetSdkVersion 36
+        versionCode 2017
+        versionName "2.0.17"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,8 +22,17 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            storeFile file(signingProperties['storeFile'])
+            storePassword signingProperties['storePassword']
+            keyAlias signingProperties['keyAlias']
+            keyPassword signingProperties['keyPassword']
+        }
+    }
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
